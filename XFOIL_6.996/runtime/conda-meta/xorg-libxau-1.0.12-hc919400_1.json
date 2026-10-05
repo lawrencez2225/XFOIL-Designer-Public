@@ -1,0 +1,9 @@
+{
+  "name": "xorg-libxau",
+  "version": "1.0.12",
+  "build": "hc919400_1",
+  "url": "https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libxau-1.0.12-hc919400_1.conda",
+  "sha256": "adae11db0f66f86156569415ed79cda75b2dbf4bea48d1577831db701438164f",
+  "license": "MIT",
+  "metadata_scope": "Package identity and upstream checksum only; original installation file lists and build-prefix placeholders omitted."
+}

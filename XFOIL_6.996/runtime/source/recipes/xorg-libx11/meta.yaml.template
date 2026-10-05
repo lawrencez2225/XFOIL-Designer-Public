@@ -1,0 +1,85 @@
+{% set xorg_name = "libX11" %}
+{% set xorg_category = "lib" %}
+{% set name = "xorg-" ~ xorg_name %}
+{% set version = "1.8.13" %}
+{% set sha256 = "69606f485c2c07c14ef64f75b7bb326d48587af33795d9ab3e607c0b5f94f11c" %}
+{% set am_version = "1.15" %} # keep synchronized with build.sh
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://www.x.org/releases/individual/{{ xorg_category }}/{{ xorg_name }}-{{ version }}.tar.xz
+  sha256: {{ sha256 }}
+  patches:
+    # https://gitlab.freedesktop.org/xorg/proto/xorgproto/-/issues/44
+    - windows_compat.patch
+
+build:
+  number: 0
+  run_exports:
+    - {{ pin_subpackage(name|lower) }}
+  detect_binary_files_with_prefix: true
+  always_include_files:
+    # Workaround for dummy X11 headers in OSX `tk` package
+    - include/X11/cursorfont.h
+    - include/X11/ImUtil.h
+    - include/X11/Xcms.h
+    - include/X11/XKBlib.h
+    - include/X11/XlibConf.h
+    - include/X11/Xlib.h
+    - include/X11/Xlibint.h
+    - include/X11/Xlib-xcb.h
+    - include/X11/Xlocale.h
+    - include/X11/Xregion.h
+    - include/X11/Xresource.h
+    - include/X11/Xutil.h
+
+requirements:
+  build:
+    - m2-autoconf                   # [win]
+    - m2-automake{{ am_version }}   # [win]
+    - m2-libtool                    # [win]
+    - pkg-config                    # [unix]
+    - m2-pkg-config                 # [win]
+    - gnuconfig                     # [unix]
+    - m2-base                       # [win]
+    - make                          # [unix]
+    - m2-make                       # [win]
+    - {{ compiler('c') }}           # [unix]
+    - {{ stdlib('c') }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib('m2w64_c') }}       # [win]
+    - autoconf                      # [unix]
+    - automake                      # [unix]
+    - gettext                       # [unix]
+    - libtool                       # [unix]
+    - sed                           # [unix]
+  host:
+    - xorg-xorgproto
+    - libxcb
+    - pthread-stubs
+    - xorg-util-macros
+    - xorg-xtrans
+
+test:
+  commands:
+    {% set lib_idents = [ "X11", "X11-xcb" ] %}
+    {% for lib_ident in lib_idents %}
+    - test -f $PREFIX/lib/lib{{ lib_ident }}.dylib  # [osx]
+    - test -f $PREFIX/lib/lib{{ lib_ident }}.so  # [linux]
+    - if not exist %PREFIX%/Library/lib/lib{{ lib_ident }}.dll.a exit /b 1  # [win]
+    - if not exist %PREFIX%/Library/bin/msys-{{ lib_ident }}-*.dll exit /b 1  # [win]
+    {% endfor %}
+
+about:
+  home: https://www.x.org/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: The main client library for X Windows version 11.
+
+extra:
+  recipe-maintainers:
+    - pkgw

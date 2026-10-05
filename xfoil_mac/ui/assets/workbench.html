@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f5f7">
+<title>XFOIL 气动工作台</title>
+<style>
+:root {
+  color-scheme: light;
+  font: 14px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  --ink: #1d1d1f;
+  --secondary: #6e6e73;
+  --blue: #007aff;
+  --blue-hover: #0066d6;
+  --line: #e5e5ea;
+  --surface: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; }
+button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
+button, input, select, summary, a { outline-offset: 3px; }
+:focus-visible { outline: 3px solid #007aff66; }
+::selection { background: #d9eaff; color: #1d1d1f; }
+
+header {
+  padding: 20px max(32px, calc((100vw - 1320px) / 2));
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  color: var(--blue);
+  background: #f0f6ff;
+  border: 1px solid #e1ecfa;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+}
+h1 { font-size: 20px; font-weight: 650; letter-spacing: -.5px; margin: 0; }
+header p { margin: 1px 0 0; color: var(--secondary); font-size: 12px; }
+.badge { display: flex; align-items: center; gap: 8px; color: var(--secondary); font-size: 12px; white-space: nowrap; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #34c759; }
+main { max-width: 1384px; margin: auto; padding: 32px; }
+.workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+.eyebrow { margin: 0 0 5px; font-size: 11px; font-weight: 600; color: #86868b; letter-spacing: .09em; }
+.workspace-heading h2 { margin: 0; font-size: 29px; font-weight: 650; letter-spacing: -.8px; }
+.workspace-heading p:last-child { margin: 5px 0 0; color: var(--secondary); font-size: 13px; }
+nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 4px;
+  background: #eaeaee;
+  border: 1px solid #e4e4e9;
+  border-radius: 12px;
+}
+nav button {
+  padding: 8px 17px;
+  color: #6e6e73;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+nav button:hover { background: #ffffff80; color: var(--ink); }
+nav button.active { color: var(--ink); background: #fff; box-shadow: 0 1px 4px #00000012, 0 0 0 1px #00000003; }
+nav .count { margin-left: 4px; font-size: 11px; color: var(--blue); font-variant-numeric: tabular-nums; }
+
+button, select, input {
+  border: 1px solid #d9d9df;
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--ink);
+  background: #fff;
+  min-height: 39px;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+button { cursor: pointer; font-size: 13px; font-weight: 500; line-height: 1.45; }
+button:hover { background: #f5f5f7; border-color: #c2c2c9; }
+button:active { background: #ebebef; }
+button.primary { color: #fff; background: var(--blue); border-color: var(--blue); box-shadow: 0 2px 5px #007aff1a; }
+button.primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); }
+button.primary:active { background: #005bc2; }
+button.danger { color: #c9342c; }
+button.danger:hover { border-color: #f1c6c3; background: #fff5f4; }
+button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+input:hover, select:hover { border-color: #b8b8c0; }
+input:focus, select:focus { border-color: var(--blue); }
+input::placeholder { color: #909097; opacity: 1; }
+input[type=number] { font-variant-numeric: tabular-nums; }
+input[type=checkbox] { accent-color: var(--blue); width: 15px; height: 15px; min-height: 0; margin: 0 6px 0 0; vertical-align: -2px; border-radius: 4px; }
+input[type=file] { font-size: 12px; padding: 6px; background: #fafafb; }
+input::file-selector-button { font: inherit; font-weight: 500; border: 0; padding: 5px 10px; margin-right: 9px; border-radius: 5px; background: #ececf0; color: #424247; cursor: pointer; }
+input::file-selector-button:hover { background: #e2e2e8; }
+select { max-width: 100%; text-overflow: ellipsis; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1.16fr) minmax(0, .84fr); gap: 24px; align-items: start; }
+.layout > * { min-width: 0; }
+.card { background: var(--surface); border: 1px solid #e6e6eb; border-radius: 16px; padding: 24px; margin-bottom: 18px; box-shadow: 0 2px 8px #00000003; }
+h2 { font-size: 17px; font-weight: 650; letter-spacing: -.3px; margin: 0 0 19px; line-height: 1.45; }
+h3 { font-size: 14px; font-weight: 600; margin: 20px 0 10px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+label { display: block; color: #515157; font-size: 12px; font-weight: 500; }
+label input, label select { display: block; width: 100%; min-width: 0; margin-top: 7px; font-size: 14px; font-weight: 400; }
+label input[type=checkbox] { display: inline-block; width: 15px; margin-top: 0; }
+.card > label { margin-top: 16px; }
+.full { grid-column: 1 / -1; }
+.note { font-size: 12px; font-weight: 400; line-height: 1.75; color: var(--secondary); margin: 12px 0 0; overflow-wrap: anywhere; }
+label.note { color: #515157; }
+.actions { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; margin-top: 19px; }
+.actions > select { flex: 1 1 180px; min-width: 0; font-size: 13px; }
+.muted { color: var(--secondary); font-size: 13px; margin: -5px 0 20px; }
+#derived { padding: 10px 12px; border-radius: 8px; background: #f5f5f7; color: #58585f; font-variant-numeric: tabular-nums; }
+#derived:empty { display: none; }
+#message { position: sticky; top: 12px; z-index: 5; border: 1px solid #ccdef7; border-radius: 11px; padding: 13px 17px; background: #f0f6ff; color: #255080; margin-bottom: 20px; white-space: pre-wrap; display: none; box-shadow: 0 4px 16px #00000006; overflow-wrap: anywhere; }
+#message.error { background: #fff4f3; border-color: #f1d0cd; color: #ad3028; }
+details { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 20px; }
+summary { cursor: pointer; font-size: 13px; font-weight: 500; color: #515157; }
+summary:hover { color: var(--blue); }
+summary::marker { color: #8e8e93; font-size: 11px; }
+details[open] > summary { margin-bottom: 16px; color: var(--ink); }
+details > button { margin-top: 14px; }
+iframe { display: block; width: 100%; border: 1px solid #e9e9ee; height: 600px; border-radius: 10px; background: #fafafb; }
+.preview-card { overflow: hidden; }
+#previewEmpty { padding: 20px; margin: 0; background: #f8f8fa; border: 1px dashed #dddde4; border-radius: 10px; line-height: 1.9; }
+#preflight { padding: 16px; border: 1px solid #e8e8ee; border-radius: 10px; background: #f8f8fa; color: #616169; font-size: 13px; line-height: 1.8; }
+.start-card .actions { display: grid; grid-template-columns: 1fr 1fr; }
+.start-card .actions button { padding: 11px 15px; }
+.reference-card { background: #eeeef2; border-color: #e6e6ec; box-shadow: none; }
+.reference-card h2 { color: #515157; font-size: 14px; margin-bottom: 8px; }
+.reference-card .note { margin-top: 0; }
+
+.scroll { overflow: auto; margin-top: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 7px; border-bottom: 1px solid var(--line); }
+th { color: #86868b; font-weight: 500; font-size: 11px; background: #fafafb; }
+td input { width: 88px; font-size: 13px; }
+td button { min-height: 34px; padding: 7px 10px; }
+.section-fields { min-width: 620px; }
+a { color: #0066cc; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.history-row { padding: 24px 0; border-bottom: 1px solid var(--line); }
+.history-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.history-row strong { font-size: 15px; font-weight: 600; letter-spacing: -.1px; overflow-wrap: anywhere; }
+.history-row > .note { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 11px; color: #86868b; }
+.history-row .actions { gap: 8px; margin-top: 15px; }
+.history-row .actions a { font-size: 13px; font-weight: 500; margin-right: 8px; }
+.history-row > p { color: var(--secondary); font-size: 13px; }
+.history-row > a { display: inline-block; margin: 12px 0; }
+.row-top { display: flex; justify-content: space-between; gap: 14px; align-items: start; }
+.row-top > :first-child { min-width: 0; }
+.row-top > button { flex-shrink: 0; }
+.row-top h2 { margin-bottom: 6px; }
+.row-top .note { margin-top: 0; }
+.status { flex-shrink: 0; font-size: 11px; line-height: 1.5; font-weight: 500; border-radius: 6px; padding: 4px 8px; background: #eff8f1; color: #23753c; }
+.status.bad { color: #a1372d; background: #fff1ef; }
+.status.pending { color: #366ba6; background: #edf5ff; }
+.status.warning { color: #89600b; background: #fff7e5; }
+.status.neutral { color: #6e6e73; background: #f1f1f4; }
+.empty { padding: 46px 20px; text-align: center; color: #86868b; }
+.log { white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.7 ui-monospace, "SFMono-Regular", Menlo, monospace; color: #515157; background: #f7f7f9; border: 1px solid #ededf1; border-radius: 8px; padding: 14px; max-height: 220px; overflow: auto; }
+.pill { font-size: 12px; color: var(--secondary); }
+progress { display: block; width: 100%; height: 6px; border: 0; border-radius: 3px; overflow: hidden; accent-color: var(--blue); margin: 14px 0 18px; background: #eaeaef; }
+progress::-webkit-progress-bar { background: #eaeaef; border-radius: 3px; }
+progress::-webkit-progress-value { background: var(--blue); border-radius: 3px; }
+progress::-moz-progress-bar { background: var(--blue); border-radius: 3px; }
+.hidden { display: none !important; }
+footer { font-size: 11px; color: #86868b; text-align: center; padding: 25px 0 6px; border-top: 1px solid var(--line); margin-top: 20px; }
+
+@media (min-width: 1150px) { .start-card { padding: 28px; } }
+@media (max-width: 1050px) {
+  .layout { grid-template-columns: minmax(0, 1fr) minmax(300px, .82fr); gap: 18px; }
+  .grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-heading { align-items: flex-start; }
+  nav button { padding-inline: 12px; }
+  .card { padding: 21px; }
+}
+@media (max-width: 850px) {
+  header { padding: 18px 24px; }
+  main { padding: 26px 24px; }
+  .layout { grid-template-columns: 1fr; }
+  .workspace-heading { flex-direction: column; align-items: stretch; gap: 20px; }
+  nav { align-self: flex-start; }
+  .badge { display: none; }
+  iframe { height: 540px; }
+}
+@media (max-width: 520px) {
+  header { padding: 17px 18px; }
+  h1 { font-size: 18px; }
+  header p { font-size: 11px; }
+  .brand { gap: 11px; }
+  .brand-mark { width: 40px; height: 40px; border-radius: 11px; }
+  main { padding: 23px 14px; }
+  .workspace-heading { margin: 0 4px 22px; }
+  .workspace-heading h2 { font-size: 26px; }
+  nav { display: flex; width: 100%; }
+  nav button { flex: 1 1 0; padding: 8px 5px; font-size: 12px; }
+  .card { padding: 20px 17px; border-radius: 13px; margin-bottom: 14px; }
+  .grid, .grid.three { grid-template-columns: 1fr; gap: 15px; }
+  h2 { font-size: 16px; margin-bottom: 17px; }
+  label input, label select { font-size: 16px; }
+  .row-top { flex-wrap: wrap; }
+  .row-top > button { width: 100%; }
+  .history-row .row-top { flex-wrap: nowrap; }
+  .actions { gap: 8px; }
+  .actions > select { flex-basis: 100%; }
+  button { max-width: 100%; }
+  iframe { height: 470px; }
+  #message { top: 8px; font-size: 13px; }
+  footer { padding-inline: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">
+<div class="brand-mark" aria-hidden="true">
+<svg width="31" height="24" viewBox="0 0 40 30" fill="none">
+<path d="M5 18C7 9 18 7 35 14C21 13 10 22 5 18Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M5 24H24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".3"/>
+</svg>
+</div>
+<div>
+<h1>XFOIL 气动工作台</h1>
+<p>翼型 · 机翼 · 数据验证 · 设计比较</p>
+</div>
+</div>
+<span class="badge">本地运行 · 数据保存在这台 Mac</span>
+</header>
+<main>
+<div class="workspace-heading">
+<div>
+<p class="eyebrow">WORKSPACE</p>
+<h2 id="workspaceTitle">新建气动分析</h2>
+<p id="workspaceDescription">设置工况，检查输入，开始一次可追溯的计算。</p>
+</div>
+<nav aria-label="工作台导航">
+<button class="active" data-tab="new" aria-current="page">新建计算</button>
+<button data-tab="history">计算历史</button>
+<button data-tab="queue">任务进度 <span class="count" id="count">
+</span>
+</button>
+</nav>
+</div>
+<div id="message" role="status" aria-live="polite">
+</div>
+<section id="tab-new">
+<div class="layout">
+<div>
+<div class="card">
+<h2>选择分析任务</h2>
+<div class="grid">
+<label>分析类型<select id="kind">
+<option value="polar">翼型 / Re / Mach 扫描</option>
+<option value="lift">按目标升力 CL 直接计算</option>
+<option value="wing">AVL 机翼建模与计算</option>
+<option value="panels">面板敏感性检查</option>
+<option value="directions">关键点双向逼近检查</option>
+<option value="benchmark">NACA 0012 实测基准</option>
+<option value="coupling">机翼黏性阻力估算</option>
+<option value="design">翼型设计与多工况搜索</option>
+</select>
+</label>
+<label>计算名称（可选）<input id="title" placeholder="例如：低速巡航翼型比较">
+</label>
+</div>
+<div class="actions">
+<select id="preset" aria-label="选择已保存设置">
+<option value="">尚未保存设置</option>
+</select>
+<button id="loadPreset" disabled>载入</button>
+<button id="loadLast" disabled>使用上次设置</button>
+</div>
+</div>
+<div class="card" data-kinds="polar lift panels design">
+<h2>翼型</h2>
+<div class="grid">
+<label>NACA 编号，多个用空格分隔<input id="nacas" value="2412">
+</label>
+<label>或选择坐标文件<input id="airfoil" list="database" placeholder="输入名称搜索数据库">
+<datalist id="database">
+</datalist>
+</label>
+<label class="full">导入自己的坐标文件<input id="upload" type="file" accept=".dat,.txt">
+</label>
+</div>
+<p class="note">NACA 与坐标文件二选一；选择坐标后优先使用坐标文件。设计功能使用一个基础翼型。</p>
+</div>
+<div class="card" data-kinds="polar lift panels coupling">
+<h2>环境与尺寸</h2>
+<div class="grid">
+<label>输入方式<select id="flowMode">
+<option value="speed">输入实际速度</option>
+<option value="numbers">输入 Re / Mach</option>
+</select>
+</label>
+<label id="speedLabel">速度（m/s）<input id="speed" type="number" value="20" step="any" min="0.001">
+</label>
+<label data-flow="numbers">Re，可输入多个<input id="res" value="1000000">
+</label>
+<label data-flow="numbers">Mach，可留空由 Re 计算<input id="machs" placeholder="例如 0.05 0.1">
+</label>
+<label>弦长（m）<input id="chord" type="number" value="1" step="any" min="0.0001">
+</label>
+<label>密度（kg/m³）<input id="rho" type="number" value="1.225" step="any">
+</label>
+<label>动力黏度（Pa·s）<input id="mu" type="number" value="0.000017894" step="any">
+</label>
+<label>声速（m/s）<input id="sound" type="number" value="340.3" step="any">
+</label>
+</div>
+<p class="note" id="derived">
+</p>
+</div>
+<div class="card" data-kinds="polar panels coupling">
+<h2>攻角范围</h2>
+<div class="grid three">
+<label>开始（°）<input id="a0" type="number" value="-4" step="any">
+</label>
+<label>结束（°）<input id="a1" type="number" value="12" step="any">
+</label>
+<label>步长（°）<input id="da" type="number" value="1" step="any">
+</label>
+</div>
+<label class="note">
+<input id="adaptive" type="checkbox"> 自动加密重要区间（最多两轮）</label>
+</div>
+<div class="card" data-kinds="lift">
+<h2>要达到的升力</h2>
+<label>目标 CL，空格分隔<input id="cls" value="0.2 0.5 0.8">
+</label>
+<p class="note">直接调用求解器的 CL 指令，反求攻角，并检查实际 CL 是否达到目标。</p>
+</div>
+<div class="card" data-kinds="polar lift panels coupling design">
+<h2>求解设置</h2>
+<div class="grid three">
+<label>Ncrit<input id="ncrit" type="number" value="9" step="any">
+</label>
+<label>上表面强制转捩 x/c<input id="xtrTop" type="number" value="1" step="0.01">
+</label>
+<label>下表面强制转捩 x/c<input id="xtrBottom" type="number" value="1" step="0.01">
+</label>
+<label>面板数<input id="panels" type="number" value="240" min="40" max="500">
+</label>
+<label>迭代上限<input id="iterations" type="number" value="200">
+</label>
+<label>每算例时限（秒）<input id="timeout" type="number" value="120">
+</label>
+</div>
+<details>
+<summary>更多设置</summary>
+<div class="grid">
+<label>前缘面板聚集系数<input id="bunch" type="number" value="1" step="any">
+</label>
+<label>后缘 / 前缘密度比<input id="density" type="number" value="0.15" step="any">
+</label>
+<label>额外重试轮数<input id="retries" type="number" value="2" min="0" max="5">
+</label>
+<label>流动类型<select id="flowType">
+<option value="1">TYPE 1 — 固定 Re / Mach</option>
+<option value="2">TYPE 2 — 固定升力 / 弦长</option>
+<option value="3">TYPE 3 — 固定升力 / 速度</option>
+</select>
+</label>
+<label>TYPE 2/3 参考 CL<input id="referenceCL" type="number" value="1" step="any">
+</label>
+</div>
+</details>
+<label class="note">
+<input id="bl" type="checkbox" checked> 保存边界层曲线（Cf、位移厚度、动量厚度、H）</label>
+<p class="note">转捩位置 1 表示不在更前方强制转捩，自然转捩仍可能发生。TYPE 2/3 适用于攻角扫描。</p>
+</div>
+<div class="card" data-kinds="panels">
+<h2>面板对比</h2>
+<label>待比较面板数<input id="panelList" value="120 240 360">
+</label>
+</div>
+<div class="card" data-kinds="directions coupling">
+<h2>选择已有结果</h2>
+<label>源计算<select id="sourceRun">
+</select>
+</label>
+<div data-kinds="directions">
+<label>检查攻角（留空自动选失败点 / 最佳升阻比点）<input id="angles" placeholder="例如 4.25 10">
+</label>
+</div>
+<div data-kinds="coupling">
+<label>模型 1 长度单位等于多少米<input id="unit" type="number" value="1" step="any">
+</label>
+<p class="note">速度推导的 Mach 必须与 AVL 算例一致。适用于低后掠、低上反角、零侧滑的附着流模型；缺少极曲线支撑的条带不外推。</p>
+</div>
+</div>
+<div class="card" data-kinds="benchmark">
+<h2>实测数据比较</h2>
+<div class="grid">
+<label>Ladson 粗糙带系列<select id="grit">
+<option>80 grit</option>
+<option>120 grit</option>
+<option>180 grit</option>
+</select>
+</label>
+<label>最大 |攻角|（°）<input id="benchmarkAlpha" type="number" value="10.2" step="any">
+</label>
+<label>假设的强制转捩 x/c<input id="trip" type="number" value="0.05" step="0.01">
+</label>
+</div>
+<p class="note">使用 NASA TM 4074 公开实测值：NACA 0012、Re=600 万、M=0.15。实验表只注明粗糙带系列，Xtr 是本次建模假设；XFOIL 不解析砂粒粗糙度阻力。报告呈现偏差，不自动宣称“验证通过”。</p>
+</div>
+<div class="card" data-kinds="wing">
+<h2>机翼尺寸</h2>
+<div class="grid three">
+<label>全翼展<input id="span" type="number" value="8" step="any">
+</label>
+<label>根弦长<input id="rootChord" type="number" value="1" step="any">
+</label>
+<label>尖弦长<input id="tipChord" type="number" value="1" step="any">
+</label>
+<label>前缘后掠（°）<input id="sweep" type="number" value="0" step="any">
+</label>
+<label>上反角（°）<input id="dihedral" type="number" value="0" step="any">
+</label>
+<label>根部安装角（°）<input id="rootTwist" type="number" value="0" step="any">
+</label>
+<label>尖部安装角（°）<input id="tipTwist" type="number" value="-1" step="any">
+</label>
+<label>根部 NACA<input id="wingNaca" value="0012">
+</label>
+<label>尖部 NACA<input id="tipNaca" value="0012">
+</label>
+<label>Mach<input id="wingMach" type="number" value="0.1" step="any">
+</label>
+<label>展向网格<input id="spanPanels" type="number" value="24">
+</label>
+<label>弦向网格<input id="chordPanels" type="number" value="12">
+</label>
+</div>
+<label>计算攻角，空格分隔<input id="wingAlphas" value="0 2 4 6">
+</label>
+<label>或追加目标 CL（可选）<input id="wingCLs" placeholder="例如 0.5">
+</label>
+<label>载入机翼 JSON（可选）<input id="wingUpload" type="file" accept=".json">
+</label>
+<div class="actions">
+<button id="previewWing">更新三维预览</button>
+<button id="resetWing">按上方尺寸重新建模</button>
+</div>
+<p class="note">默认矩形翼仍保留全翼展 8、弦长 1。预览显示厚度和扭转；修改根尖弦长或后掠后，俯视形状才会改变。新建模型时按主翼生成参考量；载入、编辑截面或更新预览会保留已有参考量。</p>
+<details>
+<summary>参考面积、参考弦长、参考翼展与力矩参考点</summary>
+<p class="note" id="wingReference">创建或载入模型后显示。</p>
+<p class="note">所有长度使用同一模型单位，面积使用该单位的平方。修改截面后若需更新参考尺寸，请点击下方按钮；力矩参考点默认保持不变。</p>
+<label class="note">
+<input id="resetReferencePoint" type="checkbox"> 同时将力矩参考点重置为主翼加权 1/4 弦位置（y=z=0）</label>
+<button id="recalculateReference">按当前主翼重算参考面积、弦长和翼展</button>
+</details>
+<details>
+<summary>截面编辑器（也可从历史载入多翼面模型）</summary>
+<div id="sections" class="scroll">
+</div>
+<button id="applySections">应用截面修改并预览</button>
+</details>
+</div>
+<div class="card" data-kinds="design">
+<h2>候选形状和约束</h2>
+<div class="grid">
+<label>厚度倍率，空格分隔<input id="thicknesses" value="1">
+</label>
+<label>弯度倍率，空格分隔<input id="cambers" value="0.8 1 1.2">
+</label>
+<label>襟翼偏角（°，正向下）<input id="flaps" value="0">
+</label>
+<label>襟翼铰链 x/c<input id="hinge" type="number" value="0.75" step="any">
+</label>
+<label>混合的第二个 NACA（可选）<input id="blendNaca" placeholder="例如 0012">
+</label>
+<label>第二个翼型的混合比例<input id="blends" value="0">
+</label>
+<label>最小厚度比<input id="minThickness" type="number" value="0.08" step="any">
+</label>
+<label>最大 |CM|<input id="maxCM" type="number" value="0.2" step="any">
+</label>
+</div>
+<h3>每个候选都要满足的工况</h3>
+<div class="scroll">
+<table>
+<thead>
+<tr>
+<th>Re</th>
+<th>Mach</th>
+<th>目标 CL</th>
+<th>
+</th>
+</tr>
+</thead>
+<tbody id="designConditions">
+</tbody>
+</table>
+</div>
+<button id="addCondition">添加工况</button>
+<p class="note">比较各工况的平均 CD 和最差 CL/CD，保留所有候选以及 Pareto 解。最多 60 个候选、8 个工况、160 次求解；这是有限范围搜索。</p>
+</div>
+</div>
+<aside>
+<div class="card start-card">
+<h2>准备就绪后，开始计算</h2>
+<p class="muted">先检查本次算例数量，再加入计算队列。结果会集中在计算历史里。</p>
+<div id="preflight">修改输入后，点击“检查设置”。</div>
+<div class="actions">
+<button id="check">检查设置</button>
+<button class="primary" id="submit">开始计算</button>
+</div>
+<details>
+<summary>保存这套设置</summary>
+<label>设置名称<input id="presetName" placeholder="例如：20 m/s，0.3 m 弦长">
+</label>
+<button id="savePreset">保存为预设</button>
+</details>
+</div>
+<div class="card preview-card">
+<h2 id="previewTitle">预览与提示</h2>
+<div id="previewEmpty" class="note">机翼可先预览后计算。完成的翼型计算支持交互查看 Cp、极曲线和失败点，边界层图在算例报告内。</div>
+<iframe id="wingPreview" class="hidden" title="机翼三维预览">
+</iframe>
+</div>
+<div class="card reference-card">
+<h2>结果与文件</h2>
+<p class="note">每次新计算只有一个结果首页。图表与结论从首页进入；输入副本和求解证据集中存放。原有扫描和机翼计算仍会出现在历史中。</p>
+</div>
+</aside>
+</div>
+</section>
+<section id="tab-history" class="hidden">
+<div class="card">
+<div class="row-top">
+<div>
+<h2>计算历史</h2>
+<p class="note">查看、复制设置重跑、继续新版任务，或把整份报告打包带走。</p>
+</div>
+<button id="compare">对比所选翼型计算</button>
+</div>
+<div id="historyList">
+</div>
+</div>
+</section>
+<section id="tab-queue" class="hidden">
+<div class="card">
+<h2>任务进度</h2>
+<p class="note">任务依次运行。取消会停止当前求解并保留已完成的数据；重新启动工作台后可从历史继续。</p>
+<div id="jobs">
+</div>
+</div>
+</section>
+<footer>XFOIL / AVL · 本地工作台。原始数据不会因关闭页面而删除；关闭运行工作台的终端会停止服务。</footer>
+</main>
+<script>
+const token='__SESSION_TOKEN__',$=id=>document.getElementById(id),num=id=>{const v=Number($(id).value);if(!Number.isFinite(v)||$(id).value.trim()==='')throw Error('请输入有效数值：'+id);return v},words=id=>$(id).value.trim().split(/[\s,，]+/).filter(Boolean),nums=id=>words(id).map(v=>{const n=Number(v);if(!Number.isFinite(n))throw Error('无效数字：'+v);return n});let state={history:[],jobs:[],presets:{presets:{},last:{}}},model=null,lastHistory='',lastJobs='',lastPreset='';history.replaceState(null,'',location.pathname);
+function message(text,error=false){$('message').textContent=text;$('message').style.display='block';$('message').classList.toggle('error',error)}async function api(path,value){const r=await fetch('/api/'+path,{method:value===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Xfoil-Token':token},body:value===undefined?undefined:JSON.stringify(value)}),data=await r.json();if(!r.ok)throw Error(data.error||r.statusText);return data}function task(fn){return async e=>{try{await fn(e)}catch(error){message(error.message,true)}}}function tab(name){const headings={new:['新建气动分析','设置工况，检查输入，开始一次可追溯的计算。'],history:['计算历史','回到每一次分析，比较结果，继续探索。'],queue:['任务进度','查看求解状态与运行信息，随时掌握计算进展。']};$('workspaceTitle').textContent=headings[name][0];$('workspaceDescription').textContent=headings[name][1];for(const n of ['new','history','queue'])$('tab-'+n).classList.toggle('hidden',name!==n);document.querySelectorAll('nav button').forEach(b=>{b.classList.toggle('active',b.dataset.tab===name);b.setAttribute('aria-current',b.dataset.tab===name?'page':'false')})}document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+function refreshFields(){const kind=$('kind').value;document.querySelectorAll('[data-kinds]').forEach(n=>n.classList.toggle('hidden',!n.dataset.kinds.split(' ').includes(kind)));const speed=$('flowMode').value==='speed'||kind==='coupling';document.querySelectorAll('[data-flow]').forEach(n=>n.classList.toggle('hidden',speed));$('speedLabel').classList.toggle('hidden',!speed);$('wingPreview').classList.toggle('hidden',kind!=='wing'||!$('wingPreview').src);fillSources();derived()}function derived(){try{const v=num('speed'),c=num('chord'),r=num('rho'),mu=num('mu'),a=num('sound');$('derived').textContent=$('flowMode').value==='speed'?`预计 Re=${(r*v*c/mu).toPrecision(6)}，Mach=${(v/a).toPrecision(5)}。修改尺寸或环境后会重新计算。`:'同时填写 Re 与 Mach 时按独立给定值使用。';}catch{}}
+$('kind').onchange=refreshFields;$('flowMode').onchange=refreshFields;['speed','chord','rho','mu','sound'].forEach(id=>$(id).oninput=derived);function set(id,v){if(v!==undefined&&v!==null)$(id).value=Array.isArray(v)?v.join(' '):v}
+function solver(){return {ncrit:num('ncrit'),xtr_top:num('xtrTop'),xtr_bottom:num('xtrBottom'),panels:num('panels'),panel_bunching:num('bunch'),te_le_ratio:num('density')}}function flow(){return {chord_m:num('chord'),air_density:num('rho'),air_viscosity:num('mu'),sound_speed:num('sound')}}
+function wingInput(){return {name:$('title').value||'My wing',span:num('span'),root_chord:num('rootChord'),tip_chord:num('tipChord'),sweep:num('sweep'),dihedral:num('dihedral'),root_twist:num('rootTwist'),tip_twist:num('tipTwist'),naca:$('wingNaca').value.trim(),tip_naca:$('tipNaca').value.trim(),mach:num('wingMach'),span_panels:num('spanPanels'),chord_panels:num('chordPanels'),alphas:nums('wingAlphas')}}
+function renderSections(){const holder=$('sections');holder.replaceChildren();if(!model)return;model.surfaces.forEach((s,i)=>{const h=document.createElement('h3');h.textContent=s.name;holder.append(h);const table=document.createElement('table');table.className='section-fields';const head=document.createElement('tr');['x','y','z','chord','twist','NACA / 坐标路径'].forEach(k=>{const th=document.createElement('th');th.textContent=k;head.append(th)});table.append(head);s.sections.forEach((sec,j)=>{const tr=document.createElement('tr');['x','y','z','chord','twist','foil'].forEach(k=>{const td=document.createElement('td'),input=document.createElement('input');input.value=k==='foil'?(sec.naca||sec.airfoil):sec[k];input.dataset.surface=i;input.dataset.section=j;input.dataset.key=k;if(k==='foil')input.style.width='180px';td.append(input);tr.append(td)});table.append(tr)});holder.append(table)})}
+async function preview(reset=false,recalculate=false,resetPoint=false){
+const payload=model&&!reset?{model}:wingInput();
+if(recalculate){payload.recalculate_reference=true;payload.reset_reference_point=resetPoint}
+const result=await api('preview',payload);model=result.model;
+$('wingPreview').src=result.url;$('wingPreview').classList.remove('hidden');$('previewEmpty').classList.add('hidden');
+const ref=model.reference,point=ref.point||[0,0,0];
+$('wingReference').textContent=`Sref=${ref.area}（模型单位²），Cref=${ref.chord}、Bref=${ref.span}（模型单位）；力矩参考点 (${point.join(', ')})（模型单位）。`;
+renderSections();return model}
+$('recalculateReference').onclick=task(async()=>{if(!model)await preview(true);await preview(false,true,$('resetReferencePoint').checked);$('resetReferencePoint').checked=false;message('已重算主翼参考尺寸；当前力矩参考点见参考量说明。')});
+$('previewWing').onclick=task(()=>preview(!model));$('resetWing').onclick=task(()=>{model=null;return preview(true)});$('applySections').onclick=task(async()=>{if(!model)await preview(true);$('sections').querySelectorAll('input').forEach(input=>{const s=model.surfaces[input.dataset.surface].sections[input.dataset.section],k=input.dataset.key;if(k==='foil'){delete s.naca;delete s.airfoil;s[/^\d{4}$/.test(input.value)?'naca':'airfoil']=input.value.trim()}else{const v=Number(input.value);if(!Number.isFinite(v))throw Error('截面输入无效');s[k]=v}});await preview()});
+['span','rootChord','tipChord','sweep','dihedral','rootTwist','tipTwist','wingNaca','tipNaca','spanPanels','chordPanels'].forEach(id=>$(id).addEventListener('input',()=>{if(model)message('上方尺寸尚未应用。点击“按上方尺寸重新建模”生成新模型；若要编辑现有模型并保留参考量，请使用截面编辑器。')}));
+function conditionRow(c={re:1e6,mach:.05,cl:.5}){const tr=document.createElement('tr');for(const k of ['re','mach','cl']){const td=document.createElement('td'),input=document.createElement('input');input.type='number';input.step='any';input.value=c[k];input.dataset.key=k;td.append(input);tr.append(td)}const td=document.createElement('td'),b=document.createElement('button');b.textContent='移除';b.onclick=()=>tr.remove();td.append(b);tr.append(td);$('designConditions').append(tr)}conditionRow();conditionRow({re:5e5,mach:.03,cl:.8});$('addCondition').onclick=()=>conditionRow();
+async function spec(){const kind=$('kind').value,s={kind,title:$('title').value.trim(),flow:flow(),solver_settings:solver(),timeout:num('timeout')};if(['polar','lift','panels','design'].includes(kind)){s.source=$('airfoil').value.trim()?{airfoil:$('airfoil').value.trim()}:{naca:words('nacas')[0]||'2412'};if(!s.source.airfoil&&words('nacas').length>1&&kind!=='design')s.nacas=words('nacas')}
+if(['polar','lift','panels'].includes(kind)){if($('flowMode').value==='speed')s.speed=num('speed');else{const r=nums('res'),m=nums('machs');if(r.length>1)s.re_values=r;else if(r.length)s.re=r[0];if(m.length>1)s.mach_values=m;else if(m.length)s.mach=m[0]}}if(['polar','lift','panels','coupling'].includes(kind)){s.iterations=num('iterations');s.retries=num('retries');s.boundary_layer=$('bl').checked}
+if(['polar','panels','coupling'].includes(kind)){s.aseq=[num('a0'),num('a1'),num('da')];s.adaptive_rounds=$('adaptive').checked?2:0}if(['polar','panels'].includes(kind)){s.flow_type=num('flowType');s.reference_cl=num('referenceCL')}
+if(kind==='lift')s.targets=nums('cls');if(kind==='panels')s.panels=nums('panelList');if(['directions','coupling'].includes(kind)){if(!$('sourceRun').value)throw Error('请先选择一个已有计算');s.source_run=$('sourceRun').value}if(kind==='directions'&&nums('angles').length)s.angles=nums('angles');if(kind==='coupling'){s.speed=num('speed');s.length_unit_m=num('unit')}if(kind==='benchmark'){s.grit=$('grit').value;s.trip=num('trip');s.max_alpha=num('benchmarkAlpha')}
+if(kind==='wing'){if(!model)await preview(true);model.mach=num('wingMach');model.cases=[...nums('wingAlphas').map(alpha=>({alpha})),...nums('wingCLs').map(cl=>({cl}))];if(s.title)model.name=s.title;s.model=model}
+if(kind==='design'){const conditions=[...$('designConditions').children].map(tr=>Object.fromEntries([...tr.querySelectorAll('input')].map(input=>[input.dataset.key,Number(input.value)])));s.design={source:s.source,variables:{thickness:nums('thicknesses'),camber:nums('cambers'),flap:nums('flaps'),blend:nums('blends')},hinge:num('hinge'),constraints:{min_thickness:num('minThickness'),max_abs_cm:num('maxCM')},conditions,flow:s.flow,solver_settings:s.solver_settings,timeout:s.timeout,iterations:num('iterations'),retries:num('retries'),boundary_layer:$('bl').checked};if($('blendNaca').value.trim())s.design.blend_source={naca:$('blendNaca').value.trim()}}
+return s}
+function apply(s){set('kind',s.kind);set('title',s.title||'');set('nacas',s.nacas||s.source?.naca||'2412');set('airfoil',s.source?.airfoil||'');const f=s.flow||{},settings=s.solver_settings||{};for(const[k,id]of Object.entries({chord_m:'chord',air_density:'rho',air_viscosity:'mu',sound_speed:'sound'}))set(id,f[k]);for(const[k,id]of Object.entries({ncrit:'ncrit',xtr_top:'xtrTop',xtr_bottom:'xtrBottom',panels:'panels',panel_bunching:'bunch',te_le_ratio:'density'}))set(id,settings[k]);set('timeout',s.timeout);set('iterations',s.iterations);set('retries',s.retries);set('flowMode',s.speed!=null?'speed':'numbers');set('speed',s.speed);set('res',s.re_values||[s.re??'']);set('machs',s.mach_values||[s.mach??'']);if(s.aseq)['a0','a1','da'].forEach((id,i)=>set(id,s.aseq[i]));set('cls',s.targets);set('panelList',s.panels);set('angles',s.angles||[]);set('unit',s.length_unit_m);set('flowType',s.flow_type||1);set('referenceCL',s.reference_cl||1);$('adaptive').checked=!!s.adaptive_rounds;$('bl').checked=s.boundary_layer!==false;set('grit',s.grit);set('trip',s.trip);set('benchmarkAlpha',s.max_alpha);if(s.model){model=s.model;$('resetReferencePoint').checked=false;set('wingMach',model.mach);set('wingAlphas',model.cases.filter(c=>'alpha'in c).map(c=>c.alpha));set('wingCLs',model.cases.filter(c=>'cl'in c).map(c=>c.cl));renderSections();preview().catch(e=>message(e.message,true))}if(s.design){const d=s.design;set('nacas',d.source.naca);set('airfoil',d.source.airfoil||'');set('thicknesses',d.variables.thickness||[1]);set('cambers',d.variables.camber||[1]);set('flaps',d.variables.flap||[0]);set('blends',d.variables.blend||[0]);set('hinge',d.hinge);set('blendNaca',d.blend_source?.naca||'');set('minThickness',d.constraints?.min_thickness);set('maxCM',d.constraints?.max_abs_cm);$('designConditions').replaceChildren();d.conditions.forEach(conditionRow)}refreshFields();if(s.source_run){const option=[...$('sourceRun').options].find(o=>s.source_run.endsWith(o.value));if(option)set('sourceRun',option.value);}tab('new')}
+$('check').onclick=task(async()=>{const p=await api('preflight',await spec());$('preflight').textContent=`${p.cases} 个算例 · ${p.requested_points} 个目标点。${p.note}`;message('设置检查完成，可以开始计算。')});$('submit').onclick=task(async()=>{const s=await spec(),p=await api('preflight',s);$('preflight').textContent=`${p.cases} 个算例 · ${p.requested_points} 个目标点`;const r=await api('submit',s);message('已加入计算队列。');tab('queue');await poll()});$('savePreset').onclick=task(async()=>{await api('preset',{name:$('presetName').value,spec:await spec()});message('设置已保存。');await poll()});$('loadPreset').onclick=task(()=>{const s=state.presets.presets[$('preset').value];if(!s)throw Error('请选择预设');apply(s)});$('loadLast').onclick=task(()=>{if(!state.presets.last.kind)throw Error('还没有保存的上次设置');apply(state.presets.last)});
+function resultSource(r){const isJob=r.id.startsWith('projects/');return r.id+(isJob?(r.kind==='wing'?'/data':'/data/case_001'):'')}function fillSources() {
+  const select = $('sourceRun'), previous = select.value;
+  const kind = $('kind').value === 'coupling' ? 'wing' : 'polar';
+  const rows = state.history.filter(row => row.kind === kind);
+  select.replaceChildren();
+  if (!rows.length) {
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = kind === 'wing'
+      ? '暂无符合条件的机翼计算' : '暂无符合条件的翼型计算';
+    select.append(placeholder);
+    return;
+  }
+  for (const row of rows) {
+    const option = document.createElement('option');
+    option.value = resultSource(row);
+    option.textContent = row.title + ' · ' + statusLabel(row.status);
+    select.append(option);
+  }
+  if ([...select.options].some(option => option.value === previous)) {
+    select.value = previous;
+  }
+}
+
+function button(text,fn,cls=''){const b=document.createElement('button');b.textContent=text;b.className=cls;b.onclick=task(fn);return b}function statusLabel(value) {
+  const labels = {
+    ok: '已完成', complete: '已完成', running: '计算中', queued: '等待计算',
+    needs_attention: '需要检查', incomplete: '未完成', partial: '部分完成',
+    cancelled: '已取消', failed: '失败', error: '错误',
+    invalid_outputs: '输出无效',
+  };
+  return labels[value] || value;
+}
+function statusBadge(value) {
+  let tone = 'neutral';
+  if (['ok', 'complete'].includes(value)) tone = '';
+  else if (['running', 'queued'].includes(value)) tone = 'pending';
+  else if (['needs_attention', 'incomplete', 'partial'].includes(value)) tone = 'warning';
+  else if (['failed', 'error', 'invalid_outputs'].includes(value)) tone = 'bad';
+  const badge = document.createElement('span');
+  badge.className = 'status ' + tone;
+  badge.textContent = statusLabel(value);
+  badge.title = value;
+  return badge;
+}
+function renderHistory(){const holder=$('historyList');holder.replaceChildren();if(!state.history.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='还没有计算结果。完成首次分析后，结果会显示在这里。';holder.append(empty);return}for(const r of state.history){const row=document.createElement('div');row.className='history-row';const top=document.createElement('div');top.className='row-top';const name=document.createElement('strong');const select=document.createElement('input');select.type='checkbox';select.value=r.id;select.disabled=r.kind!=='polar';select.className='compare-check';name.append(select,document.createTextNode(' '+r.title));const status=statusBadge(r.status);top.append(name,status);row.append(top);const path=document.createElement('div');path.className='note';path.textContent=r.id;row.append(path);const actions=document.createElement('div');actions.className='actions';if(r.report){const a=document.createElement('a');a.textContent='打开结果';a.href='/files/'+r.report.split('/').map(encodeURIComponent).join('/');a.target='_blank';actions.append(a)}actions.append(button('载入设置',async()=>apply(await api('load',{id:r.id}))),button('复制重跑',async()=>{await api('repeat',{id:r.id,resume:false});tab('queue');await poll()}));if(r.id.startsWith('projects/')&&!['directions','compare'].includes(r.kind))actions.append(button('继续 / 补算',async()=>{await api('repeat',{id:r.id,resume:true});tab('queue');await poll()}));if(r.report)actions.append(button('打包报告',async()=>{const e=await api('export',{id:r.id});location.assign(e.url)}));row.append(actions);holder.append(row)}}
+function renderJobs(){const holder=$('jobs');holder.replaceChildren();if(!state.jobs.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='暂无计算任务。新建分析后，可在这里查看进度。';holder.append(empty);return}for(const job of [...state.jobs].reverse()){const div=document.createElement('div');div.className='history-row';const name=document.createElement('strong');name.textContent=job.id.split('/').pop();const top=document.createElement('div');top.className='row-top';top.append(name,statusBadge(job.status));const info=document.createElement('p');info.textContent=`已收敛 ${job.completed}/${job.total||'等待计算'} 个已展开目标点`;div.append(top,info);if(['running','queued'].includes(job.status)){const progress=document.createElement('progress');if(job.total){progress.max=job.total;progress.value=job.completed}div.append(progress,button('取消此任务',async()=>{await api('cancel',{id:job.id});await poll()},'danger'))}const h=state.history.find(r=>r.id===job.id);if(h?.report){const a=document.createElement('a');a.textContent='打开结果';a.href='/files/'+h.report;a.target='_blank';div.append(a)}if(job.log){const d=document.createElement('details'),s=document.createElement('summary'),log=document.createElement('div');s.textContent='查看运行信息';log.className='log';log.textContent=job.log;d.append(s,log);div.append(d)}holder.append(div)}}
+function updatePresetAvailability() {
+  const selected = $('preset').value;
+  $('loadPreset').disabled = !selected || !state.presets.presets[selected];
+  $('loadLast').disabled = !state.presets.last.kind;
+}
+$('preset').onchange = updatePresetAvailability;
+async function poll() {
+  state = await api('state');
+  const hist = JSON.stringify(state.history);
+  const jobs = JSON.stringify(state.jobs);
+  const pres = JSON.stringify(state.presets.presets);
+  if (hist !== lastHistory) {
+    lastHistory = hist;
+    renderHistory();
+    fillSources();
+  }
+  if (jobs !== lastJobs) {
+    lastJobs = jobs;
+    renderJobs();
+  }
+  if (pres !== lastPreset) {
+    lastPreset = pres;
+    const select = $('preset'), selected = select.value;
+    const names = Object.keys(state.presets.presets);
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = names.length
+      ? '选择已保存设置…' : '尚未保存设置';
+    select.replaceChildren(placeholder);
+    for (const name of names) {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.append(option);
+    }
+    if (names.includes(selected)) select.value = selected;
+  }
+  updatePresetAvailability();
+  $('count').textContent = state.jobs.filter(
+    job => ['queued', 'running'].includes(job.status)
+  ).length || '';
+}
+
+$('compare').onclick=task(async()=>{const folders=[...document.querySelectorAll('.compare-check:checked')].map(i=>i.value);if(!folders.length)throw Error('请先勾选至少一个翼型计算');await api('submit',{kind:'compare',title:'所选翼型结果对比',folders});tab('queue');await poll()});$('upload').onchange=task(async()=>{const f=$('upload').files[0];if(!f)return;const result=await api('upload',{name:f.name,text:await f.text()});set('airfoil',result.path);message('坐标已导入，并通过几何检查。')});
+$('wingUpload').onchange=task(async()=>{const file=$('wingUpload').files[0];if(!file)return;model=JSON.parse(await file.text());$('resetReferencePoint').checked=false;set('wingMach',model.mach);set('wingAlphas',model.cases.filter(c=>'alpha'in c).map(c=>c.alpha));set('wingCLs',model.cases.filter(c=>'cl'in c).map(c=>c.cl));await preview();});
+refreshFields();poll().then(()=>{if(state.presets.last.kind)apply(state.presets.last)}).catch(e=>message(e.message,true));api('files').then(d=>d.airfoils.forEach(path=>{const o=document.createElement('option');o.value=path;$('database').append(o)})).catch(()=>{});setInterval(()=>poll().catch(e=>message('工作台连接已断开。请保留或重新打开启动工作台的终端。',true)),2500);
+</script>
+</body>
+</html>

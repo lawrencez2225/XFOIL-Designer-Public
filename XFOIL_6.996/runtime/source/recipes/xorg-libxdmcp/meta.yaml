@@ -1,0 +1,85 @@
+# This file created by conda-build 25.9.0
+# meta.yaml template originally from:
+# ------------------------------------------------
+
+package:
+  name: xorg-libxdmcp
+  version: 1.1.5
+source:
+  url: https://www.x.org/releases/individual/lib/libXdmcp-1.1.5.tar.xz
+  sha256: d8a5222828c3adab70adf69a5583f1d32eb5ece04304f7f8392b6a353aa2228c
+  patches: null
+build:
+  number: '1'
+  run_exports:
+    - xorg-libxdmcp >=1.1.5,<2.0a0
+  string: hc919400_1
+requirements:
+  build:
+    - autoconf 2.72 pl5321had7229c_1
+    - automake 1.17 pl5321h694c41f_0
+    - ca-certificates 2025.11.12 hbd8a1cb_0
+    - cctools_osx-64 1024.3 llvm19_1_h3b512aa_9
+    - cctools_osx-arm64 1024.3 llvm19_1_h5cc7f4e_9
+    - clang 19.1.7 default_h1323312_5
+    - clang-19 19.1.7 default_hc369343_5
+    - clang_impl_osx-arm64 19.1.7 h4fa02b8_25
+    - clang_osx-arm64 19.1.7 h1728699_25
+    - compiler-rt 19.1.7 he914875_1
+    - compiler-rt_osx-64 19.1.7 h138dee1_1
+    - gettext 0.25.1 he52a196_1
+    - gettext-tools 0.25.1 h3184127_1
+    - gnuconfig 2025.07.09 hd8ed1ab_0
+    - ld64_osx-64 955.13 llvm19_1_h466f870_9
+    - ld64_osx-arm64 955.13 llvm19_1_hcfa1dea_9
+    - libasprintf 0.25.1 h3184127_1
+    - libasprintf-devel 0.25.1 h3184127_1
+    - libclang-cpp19.1 19.1.7 default_hc369343_5
+    - libcxx 21.1.5 h3d58e20_0
+    - libgettextpo 0.25.1 h3184127_1
+    - libgettextpo-devel 0.25.1 h3184127_1
+    - libiconv 1.18 h57a12c2_2
+    - libintl 0.25.1 h3184127_1
+    - libintl-devel 0.25.1 h3184127_1
+    - libllvm19 19.1.7 h56e7563_2
+    - libltdl 2.4.3a h240833e_0
+    - liblzma 5.8.1 hd471939_2
+    - libtool 2.5.4 h240833e_0
+    - libxml2 2.15.1 h23bb396_0
+    - libxml2-16 2.15.1 h0ad03eb_0
+    - libzlib 1.3.1 hd23fc13_2
+    - llvm-tools 19.1.7 hb0207f0_2
+    - llvm-tools-19 19.1.7 h879f4bc_2
+    - m4 1.4.20 h6e16a3a_0
+    - macosx_deployment_target_osx-arm64 11.0 h6553868_2
+    - make 4.4.1 h00291cd_2
+    - ncurses 6.5 h0622a9a_3
+    - openssl 3.6.0 h230baf5_0
+    - perl 5.32.1 7_h10d778d_perl5
+    - pkg-config 0.29.2 hf7e621a_1009
+    - sigtool 0.1.3 h88f4db0_0
+    - tapi 1300.6.5 h390ca13_0
+    - zstd 1.5.7 h8210216_2
+  host:
+    - xorg-util-macros 1.20.2 h5505292_0
+    - xorg-xorgproto 2024.1 hd74edd7_1
+  run:
+    - __osx >=11.0
+test:
+  commands:
+    - test -f $PREFIX/lib/libXdmcp.dylib
+about:
+  home: https://www.x.org/
+  dev_url: https://gitlab.freedesktop.org/xorg/lib/libxdmcp
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: The X-windows display manager client protocol library.
+extra:
+  recipe-maintainers:
+    - pkgw
+  final: true
+  copy_test_source_files: true
+  flow_run_id: azure_20251112.2.1
+  remote_url: https://github.com/conda-forge/xorg-libxdmcp-feedstock
+  sha: c54d62eee71696b3d9310a5819053b75117b3838

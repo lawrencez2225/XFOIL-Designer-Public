@@ -1,0 +1,102 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python }}${{ matrix.native && ', native' || '' }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Most tests use the deterministic fake_solver fixture in
+          # tests/helpers.py, so they run anywhere. These Linux jobs are the
+          # cheap, fast gate and prove the Python layer is platform-neutral.
+          - os: ubuntu-latest
+            python: "3.11"
+            lfs: false
+            native: ""
+          - os: ubuntu-latest
+            python: "3.13"
+            lfs: false
+            native: ""
+          # macos-14 runners are Apple Silicon (arm64), which is the only
+          # platform the bundled XFOIL binaries actually run on. This job
+          # exercises the real solver.
+          - os: macos-14
+            python: "3.11"
+            lfs: true
+            native: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The XFOIL runtime .dylib files live in Git LFS. Skipping them on
+          # Linux is fine: the native solver tests are skipped there anyway.
+          lfs: ${{ matrix.lfs }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install package and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[surrogate]"
+
+      - name: Install compatible XFOIL on Linux
+        if: runner.os == 'Linux'
+        # Path discovery requires a runnable solver even when tests
+        # replace execution with deterministic fixtures.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends xfoil
+
+      - name: Confirm solver layout is discoverable
+        run: |
+          python -c "from xfoil_mac.runtime import discover_app; print(discover_app())"
+
+      - name: Install official Apple Silicon AVL
+        if: matrix.native == '1'
+        # The automatic installer supports Apple Silicon macOS only.
+        run: python -m xfoil_mac --install-avl
+
+      - name: Install the airfoil database
+        # The UIUC database is fetched rather than redistributed.
+        run: python -m xfoil_mac --install-airfoils
+
+      - name: Run test suite
+        env:
+          MPLBACKEND: Agg
+          # Opt-in suites. XFOIL_HTTP_TESTS binds a loopback server;
+          # XFOIL_NATIVE_TESTS drives the real arm64 solver.
+          XFOIL_HTTP_TESTS: "1"
+          XFOIL_NATIVE_TESTS: ${{ matrix.native }}
+        run: python -m unittest discover -s tests -v
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install formatting tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Black
+        run: black --check --diff .
+      - name: Flake8
+        run: flake8

@@ -1,0 +1,9 @@
+{
+  "name": "xorg-libxdmcp",
+  "version": "1.1.5",
+  "build": "hc919400_1",
+  "url": "https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libxdmcp-1.1.5-hc919400_1.conda",
+  "sha256": "f7fa0de519d8da589995a1fe78ef74556bb8bc4172079ae3a8d20c3c81354906",
+  "license": "MIT",
+  "metadata_scope": "Package identity and upstream checksum only; original installation file lists and build-prefix placeholders omitted."
+}

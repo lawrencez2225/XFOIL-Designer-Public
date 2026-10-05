@@ -1,0 +1,9 @@
+{
+  "name": "libgfortran5",
+  "version": "15.2.0",
+  "build": "hdae7583_19",
+  "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libgfortran5-15.2.0-hdae7583_19.conda",
+  "sha256": "d0a68b7a121d115b80c169e24d1265dcc25a3fe58d107df1bbc430797e226d88",
+  "license": "GPL-3.0-only WITH GCC-exception-3.1",
+  "metadata_scope": "Package identity and upstream checksum only; original installation file lists and build-prefix placeholders omitted."
+}

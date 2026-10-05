@@ -1,0 +1,100 @@
+{
+  "format_version": 1,
+  "availability_checked": "2026-10-05",
+  "access": "Upstream archives are freely downloadable without an account. Matching package recipes, patches, build scripts and their licenses are included under recipes/. Maintain equivalent source access whenever distributing the binaries.",
+  "sources": [
+    {
+      "package": "libgcc",
+      "urls": [
+        "https://mirrors.ocf.berkeley.edu/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz"
+      ],
+      "sha256": "7294d65cc1a0558cb815af0ca8c7763d86f7a31199794ede3f630c0d1b0a5723",
+      "patches": [
+        "patches/0001-allow-commands-in-main-specfile.patch",
+        "patches/0002-patch-zoneinfo_dir_override-to-point-to-our-tzdata.patch",
+        "patches/macos/0002-Make-stdlib-libc-the-default-for-macos-platforms.patch",
+        "patches/macos/0003-Find-macos-sysroot-by-calling-xcrun.patch",
+        "patches/macos/fix-malloc-error.diff",
+        "patches/macos/gcc-15.2.0.diff"
+      ],
+      "folder": null,
+      "download_url": "https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz",
+      "filename": "gcc-15.2.0.tar.gz",
+      "bytes": 178138393
+    },
+    {
+      "package": "libgcc",
+      "urls": [
+        "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz"
+      ],
+      "sha256": "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23",
+      "patches": [],
+      "folder": "zlib2",
+      "download_url": "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz",
+      "filename": "zlib-1.3.1.tar.gz",
+      "bytes": 1512791
+    },
+    {
+      "package": "libxcb",
+      "urls": [
+        "https://xorg.freedesktop.org/archive/individual/lib/libxcb-1.17.0.tar.gz"
+      ],
+      "sha256": "2c69287424c9e2128cb47ffe92171e10417041ec2963bceafb65cb3fcf8f0b85",
+      "patches": [],
+      "folder": null,
+      "download_url": "https://xorg.freedesktop.org/archive/individual/lib/libxcb-1.17.0.tar.gz",
+      "filename": "libxcb-1.17.0.tar.gz",
+      "bytes": 661593
+    },
+    {
+      "package": "xorg-libx11",
+      "urls": [
+        "https://www.x.org/releases/individual/lib/libX11-1.8.13.tar.xz"
+      ],
+      "sha256": "69606f485c2c07c14ef64f75b7bb326d48587af33795d9ab3e607c0b5f94f11c",
+      "patches": [
+        "windows_compat.patch"
+      ],
+      "folder": null,
+      "download_url": "https://www.x.org/releases/individual/lib/libX11-1.8.13.tar.xz",
+      "filename": "libX11-1.8.13.tar.xz",
+      "bytes": 1803464
+    },
+    {
+      "package": "xorg-libxau",
+      "urls": [
+        "https://www.x.org/releases/individual/lib/libXau-1.0.12.tar.xz"
+      ],
+      "sha256": "74d0e4dfa3d39ad8939e99bda37f5967aba528211076828464d2777d477fc0fb",
+      "patches": [],
+      "folder": null,
+      "download_url": "https://www.x.org/releases/individual/lib/libXau-1.0.12.tar.xz",
+      "filename": "libXau-1.0.12.tar.xz",
+      "bytes": 282624
+    },
+    {
+      "package": "xorg-libxdmcp",
+      "urls": [
+        "https://www.x.org/releases/individual/lib/libXdmcp-1.1.5.tar.xz"
+      ],
+      "sha256": "d8a5222828c3adab70adf69a5583f1d32eb5ece04304f7f8392b6a353aa2228c",
+      "patches": [],
+      "folder": null,
+      "download_url": "https://www.x.org/releases/individual/lib/libXdmcp-1.1.5.tar.xz",
+      "filename": "libXdmcp-1.1.5.tar.xz",
+      "bytes": 297596
+    },
+    {
+      "download_url": "https://www.gnu.org/licenses/old-licenses/lgpl-2.0.txt",
+      "filename": "LGPL-2.0",
+      "sha256": "cc535c21133c895b56b374c8a1dc1eb948d99003ed2b47372069456b62f42b24",
+      "bytes": 25270
+    },
+    {
+      "download_url": "https://web.mit.edu/drela/Public/web/xfoil/xfoil6.996.tgz",
+      "filename": "upstream-xfoil6.996.tgz",
+      "sha256": "0feb71b58070d8514d830fcb0b609a10a11399d362493d7b9bbfb7343dff3f23",
+      "bytes": 673006
+    }
+  ]
+}

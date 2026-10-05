@@ -1,0 +1,147 @@
+{
+  "files": {
+    "bin/xfoil": {
+      "original_sha256": "3fc664ac64c52f2fb0bf2349cfad375c986c323f71e3bb61698e0b8c09fe1842",
+      "clean_sha256": "0d54a358e64027408b07e5abd5ab39fd2889135bfd29a7bdb4c2e0423171d41a",
+      "machine_code_sha256": "1af36d9b01eca1af86880b3c6d7a6b734ae0e63f1c3ee2386149d7f6646b90b4",
+      "changed_sections": [],
+      "size": 789040
+    },
+    "bin/pplot": {
+      "original_sha256": "029823554b48827801d143549d7552834fb3d01b6cdf50fd1923d77effc89af1",
+      "clean_sha256": "d780ebfe658e606f69e8e88f5fc5148a1deba7419a42fd306f915e1f2b865d01",
+      "machine_code_sha256": "a52419c4b403df25fa3271fc4706f99918da64f737d87679436ec3fafa37ee2a",
+      "changed_sections": [],
+      "size": 250640
+    },
+    "bin/pxplot": {
+      "original_sha256": "0985c7f62499fccb8f1506864f3af9daa652793663516d8e311059d1370a8abb",
+      "clean_sha256": "d5ee0409139fe1e2d3702816a56022f2ba8e1448ccbc36371e2b3759d2d05d5e",
+      "machine_code_sha256": "03a92372a4031abb535c56687c022302930d4b1867ccc61cda49ffe5d6b30ece",
+      "changed_sections": [],
+      "size": 216816
+    },
+    "runtime/lib/libX11.6.dylib": {
+      "original_sha256": "18100884853706ac7a66990aa789b872c2203a07c9b082e797f7838868561bfc",
+      "clean_sha256": "90bb926722aa0f27460c89da95d21f20b7063d6027e8e5baea8e11b38867c620",
+      "machine_code_sha256": "f2b09c0417ecbbf2f6f056582f51ecff454086a2ffed61961679569518d10620",
+      "changed_sections": [
+        "__TEXT,__cstring"
+      ],
+      "size": 1217376
+    },
+    "runtime/lib/libgfortran.5.dylib": {
+      "original_sha256": "9dfbecebc0e92496198d9235acf484b9ce897d90ef4c42885095d6a67eef1d3b",
+      "clean_sha256": "2e51b1f43a7bc32a56e9fa507bd38fa511292ec28987ad2cb7c8a7a1c2e88e19",
+      "machine_code_sha256": {
+        "__TEXT,__text": "41a53c50357953f10eca0a3a8509d0dfe49ba5df7351532eefedb610922fa23b"
+      },
+      "changed_sections": [],
+      "size": 1811776
+    },
+    "runtime/lib/libquadmath.0.dylib": {
+      "original_sha256": "9038a47566b38f4b88ef07b7b825b5d7d776b9b6e1a20d19c4c79d44e8faf6a8",
+      "clean_sha256": "29591fc4b8da91104ea42f1474c952e763b10d741557ca771a84caec52a31b11",
+      "machine_code_sha256": {
+        "__TEXT,__text": "869dd653b665617f50ca4df6c926777fa1de89dcbdb84726ca94fc98d54e6018"
+      },
+      "changed_sections": [],
+      "size": 307584
+    },
+    "runtime/lib/libgcc_s.1.1.dylib": {
+      "original_sha256": "76632e4d480b45261d63678507c2a606fd2524be85c3e9d3a86604684c87e235",
+      "clean_sha256": "3dfcfb2f44ae447d558cf817dd6894862c16dfd893ffb59aae6c1a893b92db89",
+      "machine_code_sha256": {
+        "16777228:0:__TEXT,__text": "68e645aef0ce395b18889bb9073d204fac11843b64ac68ef4e3ae21ac14aa425"
+      },
+      "changed_sections": [],
+      "size": 156096
+    }
+  },
+  "libX11": {
+    "package_url": "https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libx11-1.8.13-hf948f5a_0.conda",
+    "package_sha256": "e8889281828ee19afb2fdd7b5d7a4b7c2e013b2ae38af4529040de542f92b065",
+    "original_file_sha256": "ce648908e91d61d732ab497da1f973190d00227da38c2ab23977962e5359027d",
+    "resource_prefix": "/opt/X11",
+    "version": "1.8.13",
+    "build": "hf948f5a_0",
+    "operation": "verified-original-package; conda-binary-prefix-relocation; relative-library-search-path; strip-debug-symbols; adhoc-sign",
+    "source_url": "https://www.x.org/releases/individual/lib/libX11-1.8.13.tar.xz",
+    "source_sha256": "69606f485c2c07c14ef64f75b7bb326d48587af33795d9ab3e607c0b5f94f11c"
+  },
+  "format_version": 1,
+  "operation": "strip-debug-symbols-and-adhoc-sign",
+  "verification": {
+    "date": "2026-10-05",
+    "suite": {
+      "before_tests": 351,
+      "after_tests": 356,
+      "result": "passed"
+    },
+    "numerical": {
+      "operating_points": 15,
+      "coefficients_exactly_equal": true,
+      "cp_and_boundary_layer_files_exactly_equal": true,
+      "naca": "2412",
+      "reference_reynolds": 1000000,
+      "reference_mach": 0.1,
+      "reference_cl": 0.5,
+      "flow_types": [
+        1,
+        2,
+        3
+      ],
+      "alphas_deg": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    "graphics": {
+      "programs": [
+        "xfoil",
+        "pplot",
+        "pxplot"
+      ],
+      "xquartz_display_verified": true,
+      "moved_checkout_with_spaces_and_unicode": true,
+      "before_after_images_pixel_identical": true,
+      "rendered_images": {
+        "xfoil": {
+          "image_size": [
+            765,
+            990
+          ],
+          "image_pixels_sha256": "dfadda50f5a2e378d0ebeca8055349aeabf220169b8ce512b159b3c8ed85c669",
+          "postscript_bytes": 21121
+        },
+        "pplot": {
+          "image_size": [
+            765,
+            990
+          ],
+          "image_pixels_sha256": "3b431d5e826024f96966e184d18ce0d639c956c63352cd3293568dc5b6d009f5",
+          "postscript_bytes": 31808
+        },
+        "pxplot": {
+          "image_size": [
+            765,
+            990
+          ],
+          "image_pixels_sha256": "7581d92c6c8594a4da5fc88eda4b8bba9d1aa9491e84c1f0faf5b681144bb408",
+          "postscript_bytes": 25632
+        }
+      },
+      "pxplot_panels": 160,
+      "pxplot_input": "Existing valid dump header; all operating-point records generated by real XFOIL"
+    },
+    "scope_notes": [
+      "The original solver fails when creating a new empty binary polar dump (Fortran EOF/write error).",
+      "The original PXPLOT has a per-side array limit of 132; default 240-panel dumps can exceed it.",
+      "These legacy restrictions predate the path cleanup; solver machine instructions were preserved.",
+      "Old Git history and old LFS objects were not rewritten."
+    ]
+  }
+}

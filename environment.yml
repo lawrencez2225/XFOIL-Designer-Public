@@ -1,0 +1,15 @@
+name: xfoil-work
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  # Core workflow: polar sweeps, plotting, and progress reporting.
+  - numpy
+  - matplotlib
+  - tqdm
+  # Surrogate fitting and multi-fidelity design search. Imported lazily by
+  # xfoil_mac/analysis/surrogate.py, so the core workflow runs without them.
+  # joblib ships with scikit-learn but is imported directly, so it is listed.
+  - scikit-learn
+  - joblib

@@ -1,0 +1,14 @@
+{
+  "reynolds": [500000, 1000000],
+  "mach": [0.1],
+  "target_cls": [0.3, 0.5],
+  "min_thickness": 0.10,
+  "max_thickness": 0.20,
+  "max_abs_cm": 0.10,
+  "min_convergence": 1.0,
+  "alpha_range": [-2, 10, 1],
+  "iterations": 200,
+  "timeout": 120,
+  "retries": 2,
+  "adaptive_rounds": 0
+}

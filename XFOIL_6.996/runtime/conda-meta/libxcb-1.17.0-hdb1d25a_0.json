@@ -1,0 +1,9 @@
+{
+  "name": "libxcb",
+  "version": "1.17.0",
+  "build": "hdb1d25a_0",
+  "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libxcb-1.17.0-hdb1d25a_0.conda",
+  "sha256": "bd3816218924b1e43b275863e21a3e13a5db4a6da74cca8e60bc3c213eb62f71",
+  "license": "MIT",
+  "metadata_scope": "Package identity and upstream checksum only; original installation file lists and build-prefix placeholders omitted."
+}

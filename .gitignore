@@ -1,0 +1,42 @@
+.DS_Store
+**/.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.vscode/
+.idea/
+xfoil_runs/
+.baseline/
+matplotlib_cache/
+avl_runtime/
+# UIUC airfoil database: copyrighted upstream with no redistribution grant,
+# so it is fetched with `python -m xfoil_mac --install-airfoils` instead.
+coord_seligFmt/
+# Python packaging artifacts
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+XFOIL_6.996/source/**/*.o
+XFOIL_6.996/source/**/*.a
+XFOIL_6.996/source/Xfoil/bin/xfoil
+XFOIL_6.996/source/Xfoil/bin/pplot
+XFOIL_6.996/source/Xfoil/bin/pxplot
+
+# Safety bundle of pre-rewrite history (local only)
+*.bundle
+
+# Local credentials and personal machine configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
+.aws/
+.ssh/

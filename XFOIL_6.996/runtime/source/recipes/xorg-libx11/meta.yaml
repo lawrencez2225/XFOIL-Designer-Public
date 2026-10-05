@@ -1,0 +1,113 @@
+# This file created by conda-build 26.1.0
+# meta.yaml template originally from:
+# ------------------------------------------------
+
+package:
+  name: xorg-libx11
+  version: 1.8.13
+source:
+  url: https://www.x.org/releases/individual/lib/libX11-1.8.13.tar.xz
+  sha256: 69606f485c2c07c14ef64f75b7bb326d48587af33795d9ab3e607c0b5f94f11c
+  patches:
+    - windows_compat.patch
+build:
+  number: '0'
+  run_exports:
+    - xorg-libx11 >=1.8.13,<2.0a0
+  detect_binary_files_with_prefix: true
+  always_include_files:
+    - include/X11/ImUtil.h
+    - include/X11/XKBlib.h
+    - include/X11/Xcms.h
+    - include/X11/Xlib-xcb.h
+    - include/X11/Xlib.h
+    - include/X11/XlibConf.h
+    - include/X11/Xlibint.h
+    - include/X11/Xlocale.h
+    - include/X11/Xregion.h
+    - include/X11/Xresource.h
+    - include/X11/Xutil.h
+    - include/X11/cursorfont.h
+  string: hf948f5a_0
+requirements:
+  build:
+    - autoconf 2.72 pl5321had7229c_1
+    - automake 1.17 pl5321h694c41f_0
+    - ca-certificates 2026.1.4 hbd8a1cb_0
+    - cctools_impl_osx-64 1030.6.3 llvm19_1_h7d82c7c_4
+    - cctools_impl_osx-arm64 1030.6.3 llvm19_1_h322ffc5_4
+    - cctools_osx-arm64 1030.6.3 llvm19_1_h6cc4725_4
+    - clang 19.1.7 default_h1323312_7
+    - clang-19 19.1.7 default_hd70426c_7
+    - clang_impl_osx-64 19.1.7 default_ha1a018a_7
+    - clang_impl_osx-arm64 19.1.7 h4c5f930_31
+    - clang_osx-arm64 19.1.7 h877a2d5_31
+    - compiler-rt 19.1.7 he914875_1
+    - compiler-rt_osx-64 19.1.7 h138dee1_1
+    - gettext 0.25.1 he52a196_1
+    - gettext-tools 0.25.1 h3184127_1
+    - gnuconfig 2025.07.09 hd8ed1ab_0
+    - ld64 956.6 llvm19_1_hc3792c1_4
+    - ld64_osx-64 956.6 llvm19_1_hcae3351_4
+    - ld64_osx-arm64 956.6 llvm19_1_h46d26d2_4
+    - libasprintf 0.25.1 h3184127_1
+    - libasprintf-devel 0.25.1 h3184127_1
+    - libclang-cpp19.1 19.1.7 default_hd70426c_7
+    - libcxx 21.1.8 h4fb565c_2
+    - libgettextpo 0.25.1 h3184127_1
+    - libgettextpo-devel 0.25.1 h3184127_1
+    - libiconv 1.18 h57a12c2_2
+    - libintl 0.25.1 h3184127_1
+    - libintl-devel 0.25.1 h3184127_1
+    - libllvm19 19.1.7 h56e7563_2
+    - libltdl 2.4.3a h240833e_0
+    - liblzma 5.8.2 h11316ed_0
+    - libsigtool 0.1.3 hc0f2934_0
+    - libtool 2.5.4 h240833e_0
+    - libxml2 2.15.1 h745d5cb_1
+    - libxml2-16 2.15.1 hd57b93d_1
+    - libzlib 1.3.1 hd23fc13_2
+    - llvm-openmp 21.1.8 h472b3d1_0
+    - llvm-tools 19.1.7 hb0207f0_2
+    - llvm-tools-19 19.1.7 h879f4bc_2
+    - m4 1.4.21 hf3981d6_0
+    - macosx_deployment_target_osx-arm64 11.0 h214bdd9_6
+    - make 4.4.1 h00291cd_2
+    - ncurses 6.5 h0622a9a_3
+    - openssl 3.6.1 hb6871ef_1
+    - perl 5.32.1 7_h10d778d_perl5
+    - pkg-config 0.29.2 hf7e621a_1009
+    - sdkroot_env_osx-arm64 26.0 ha3f98da_6
+    - sed 4.9 hf9b2955_0
+    - sigtool-codesign 0.1.3 hc0f2934_0
+    - tapi 1600.0.11.8 h8d8e812_0
+    - zstd 1.5.7 h3eecb57_6
+  host:
+    - libxcb 1.17.0 hdb1d25a_0
+    - pthread-stubs 0.4 hd74edd7_1002
+    - xorg-libxau 1.0.12 hc919400_1
+    - xorg-libxdmcp 1.1.5 hc919400_1
+    - xorg-util-macros 1.20.2 h5505292_0
+    - xorg-xorgproto 2025.1 h84a0fba_0
+    - xorg-xtrans 1.6.0 h5505292_1
+  run:
+    - __osx >=11.0
+    - libxcb >=1.17.0,<2.0a0
+test:
+  commands:
+    - test -f $PREFIX/lib/libX11.dylib
+    - test -f $PREFIX/lib/libX11-xcb.dylib
+about:
+  home: https://www.x.org/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: The main client library for X Windows version 11.
+extra:
+  recipe-maintainers:
+    - pkgw
+  final: true
+  copy_test_source_files: true
+  flow_run_id: azure_20260211.1.1
+  remote_url: https://github.com/conda-forge/xorg-libx11-feedstock
+  sha: f6e63394d368a5d45867f5f3bb49e09118497686

@@ -1,0 +1,12 @@
+{
+  "source": {"naca": "2412"},
+  "variables": {"thickness": [1.0], "camber": [0.8, 1.0, 1.2], "flap": [0.0]},
+  "hinge": 0.75,
+  "conditions": [
+    {"re": 1000000, "mach": 0.05, "cl": 0.5},
+    {"re": 500000, "mach": 0.03, "cl": 0.8}
+  ],
+  "constraints": {"min_thickness": 0.08, "max_abs_cm": 0.2},
+  "solver_settings": {"panels": 240, "ncrit": 9.0, "xtr_top": 1.0, "xtr_bottom": 1.0},
+  "timeout": 90
+}

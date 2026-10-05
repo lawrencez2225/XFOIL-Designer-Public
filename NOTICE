@@ -1,0 +1,12 @@
+XFOIL-Designer
+Copyright 2026 lawrencez2225
+
+This product includes software developed by third parties. The full list of
+components, their licenses, and where to obtain their source is in
+THIRD_PARTY_NOTICES.md.
+
+The XFOIL solver binaries and Fortran sources redistributed in XFOIL_6.996/
+are a separate work by Mark Drela and Harold Youngren (MIT), licensed under
+the GNU General Public License. They are invoked as an independent program
+through a subprocess interface and are not part of the Apache-2.0 licensed
+work. See THIRD_PARTY_NOTICES.md for details.

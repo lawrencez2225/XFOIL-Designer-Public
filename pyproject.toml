@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xfoil-designer"
+dynamic = ["version"]
+description = "Reproducible airfoil and wing analysis around the bundled XFOIL and AVL solvers"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+authors = [{ name = "lawrencez2225" }]
+keywords = [
+    "aerodynamics",
+    "airfoil",
+    "xfoil",
+    "avl",
+    "cfd",
+    "panel-method",
+    "wing-design",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Aerodynamics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+# Surrogate fitting and multi-fidelity design search. Imported lazily by
+# xfoil_mac/analysis/surrogate.py, so the core workflow runs without them.
+surrogate = ["scikit-learn", "joblib"]
+# Keep local formatting identical to the CI check.
+dev = ["black==26.10.0", "flake8==7.4.1"]
+
+[project.urls]
+Homepage = "https://github.com/lawrencez2225/XFOIL-Designer-Public"
+Issues = "https://github.com/lawrencez2225/XFOIL-Designer-Public/issues"
+Changelog = "https://github.com/lawrencez2225/XFOIL-Designer-Public/commits/main"
+
+[project.scripts]
+xfoil-designer = "xfoil_mac.cli:run"
+
+[tool.setuptools]
+# The root-level *.py files (analyse_batch.py, prescreen.py, ...) are standalone
+# development tools and are intentionally not installed as importable modules.
+packages = ["xfoil_mac", "xfoil_mac.analysis", "xfoil_mac.storage", "xfoil_mac.ui"]
+
+[tool.setuptools.package-data]
+xfoil_mac = ["assets/*.html"]
+"xfoil_mac.ui" = ["assets/*.html"]
+
+[tool.setuptools.dynamic]
+version = { attr = "xfoil_mac.__version__" }
+
+[tool.black]
+required-version = "26.10.0"
+line-length = 79
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '/(XFOIL_6\.996|avl_runtime|xfoil_runs|coord_seligFmt)/'

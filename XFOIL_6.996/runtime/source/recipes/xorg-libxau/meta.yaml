@@ -1,0 +1,78 @@
+# This file created by conda-build 25.9.0
+# meta.yaml template originally from:
+# ------------------------------------------------
+
+package:
+  name: xorg-libxau
+  version: 1.0.12
+source:
+  url: https://www.x.org/releases/individual/lib/libXau-1.0.12.tar.xz
+  sha256: 74d0e4dfa3d39ad8939e99bda37f5967aba528211076828464d2777d477fc0fb
+build:
+  number: '1'
+  detect_binary_files_with_prefix: true
+  run_exports:
+    - xorg-libxau >=1.0.12,<2.0a0
+  string: hc919400_1
+requirements:
+  build:
+    - ca-certificates 2025.11.12 hbd8a1cb_0
+    - cctools_osx-64 1024.3 llvm19_1_h3b512aa_9
+    - cctools_osx-arm64 1024.3 llvm19_1_h5cc7f4e_9
+    - clang 19.1.7 default_h1323312_5
+    - clang-19 19.1.7 default_hc369343_5
+    - clang_impl_osx-arm64 19.1.7 h4fa02b8_25
+    - clang_osx-arm64 19.1.7 h1728699_25
+    - compiler-rt 19.1.7 he914875_1
+    - compiler-rt_osx-64 19.1.7 h138dee1_1
+    - gettext 0.25.1 he52a196_1
+    - gettext-tools 0.25.1 h3184127_1
+    - ld64_osx-64 955.13 llvm19_1_h466f870_9
+    - ld64_osx-arm64 955.13 llvm19_1_hcfa1dea_9
+    - libasprintf 0.25.1 h3184127_1
+    - libasprintf-devel 0.25.1 h3184127_1
+    - libclang-cpp19.1 19.1.7 default_hc369343_5
+    - libcxx 21.1.5 h3d58e20_0
+    - libgettextpo 0.25.1 h3184127_1
+    - libgettextpo-devel 0.25.1 h3184127_1
+    - libiconv 1.18 h57a12c2_2
+    - libintl 0.25.1 h3184127_1
+    - libintl-devel 0.25.1 h3184127_1
+    - libllvm19 19.1.7 h56e7563_2
+    - liblzma 5.8.1 hd471939_2
+    - libxml2 2.15.1 h23bb396_0
+    - libxml2-16 2.15.1 h0ad03eb_0
+    - libzlib 1.3.1 hd23fc13_2
+    - llvm-tools 19.1.7 hb0207f0_2
+    - llvm-tools-19 19.1.7 h879f4bc_2
+    - macosx_deployment_target_osx-arm64 11.0 h6553868_2
+    - make 4.4.1 h00291cd_2
+    - ncurses 6.5 h0622a9a_3
+    - openssl 3.6.0 h230baf5_0
+    - pkg-config 0.29.2 hf7e621a_1009
+    - sigtool 0.1.3 h88f4db0_0
+    - tapi 1300.6.5 h390ca13_0
+    - zstd 1.5.7 h8210216_2
+  host:
+    - xorg-util-macros 1.20.2 h5505292_0
+    - xorg-xorgproto 2024.1 hd74edd7_1
+  run:
+    - __osx >=11.0
+test:
+  commands:
+    - test -f $PREFIX/lib/libXau.dylib
+about:
+  home: https://www.x.org/
+  dev_url: https://gitlab.freedesktop.org/xorg/lib/libxau
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: A simple X Windows authentication protocol.
+extra:
+  recipe-maintainers:
+    - pkgw
+  final: true
+  copy_test_source_files: true
+  flow_run_id: azure_20251112.2.1
+  remote_url: https://github.com/conda-forge/xorg-libxau-feedstock
+  sha: f19b8b7eaf1a25353a870a18a2b6e215accf1286

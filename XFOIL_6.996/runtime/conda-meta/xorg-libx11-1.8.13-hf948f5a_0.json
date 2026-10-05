@@ -1,0 +1,9 @@
+{
+  "name": "xorg-libx11",
+  "version": "1.8.13",
+  "build": "hf948f5a_0",
+  "url": "https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libx11-1.8.13-hf948f5a_0.conda",
+  "sha256": "e8889281828ee19afb2fdd7b5d7a4b7c2e013b2ae38af4529040de542f92b065",
+  "license": "MIT",
+  "metadata_scope": "Package identity and upstream checksum only; original installation file lists and build-prefix placeholders omitted."
+}

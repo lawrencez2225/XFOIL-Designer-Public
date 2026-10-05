@@ -1,0 +1,9 @@
+{
+  "name": "libgcc",
+  "version": "15.2.0",
+  "build": "hcbb3090_19",
+  "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libgcc-15.2.0-hcbb3090_19.conda",
+  "sha256": "06644fa4d34d57c9e48f4d84b1256f9e5f654fdb37f43acc8a58a396952d42b7",
+  "license": "GPL-3.0-only WITH GCC-exception-3.1",
+  "metadata_scope": "Package identity and upstream checksum only; original installation file lists and build-prefix placeholders omitted."
+}
