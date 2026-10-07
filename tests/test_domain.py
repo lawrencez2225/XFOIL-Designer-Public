@@ -29,6 +29,11 @@ def _dump(separated_ends):
 def write_run(root, name, *, alphas, ends):
     run_dir = Path(root) / name
     run_dir.mkdir(parents=True)
+    # The evidence reader validates every DUMP against its saved panels.
+    geometry = [line.split()[1:3] for line in _dump(False).splitlines()]
+    (run_dir / "geometry.dat").write_text(
+        "\n".join(" ".join(pair) for pair in geometry) + "\n"
+    )
     (run_dir / "polar.csv").write_text(
         POLAR_HEADER
         + "\n"

@@ -37,7 +37,7 @@
 激活环境后使用：
 
 ```sh
-cd XFOIL-Designer          # 你的克隆目录
+cd XFOIL-Designer-Public          # 你的克隆目录
 conda activate xfoil-work
 ```
 

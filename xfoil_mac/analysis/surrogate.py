@@ -306,7 +306,7 @@ def _matrix(rows: list[dict], names, shapes: dict | None = None):
     matrix = []
     for row in rows:
         values = [float(row[name]) for name in FEATURES] + _derived(row)
-        found = (shapes or {}).get(str(row.get("airfoil")))
+        found = (shapes or {}).get(shape.row_key(row))
         values += list(found) if found else [0.0] * width
         matrix.append(values)
     return matrix
@@ -316,7 +316,7 @@ def require_shapes(rows: list, shapes: dict) -> tuple:
     """Split rows into those with a readable shape and those without."""
     kept, dropped = [], []
     for row in rows:
-        (kept if str(row.get("airfoil")) in shapes else dropped).append(row)
+        (kept if shape.row_key(row) in shapes else dropped).append(row)
     return kept, dropped
 
 
@@ -430,12 +430,12 @@ def evaluate(
         usable, shape.attach(usable, shape_root=shape_root)
     )
     if dropped:
-        report = dict(report)
+        report = sufficiency(usable)
         report["rows_without_shape"] = len(dropped)
-    if not usable:
+    if not report["fit_allowed"]:
         return {
             "fitted": False,
-            "reason": "no row has a readable shape descriptor",
+            "reason": refusal_reason(report),
             "sufficiency": report,
         }
     groups = [row["run_id"] for row in usable]
@@ -493,7 +493,10 @@ def holdout_evaluate(
     end, and the result is appended to an audit trail so that repeated
     looks at the test set are visible rather than silent.
     """
-    partition = split_runs(rows, seed=seed)
+    usable = rows_with_targets(rows)
+    shapes = shape.attach(usable, shape_root=shape_root)
+    usable, _ = require_shapes(usable, shapes)
+    partition = split_runs(usable, seed=seed)
     if not partition["test"]:
         return {
             "reported": False,
@@ -515,8 +518,6 @@ def holdout_evaluate(
             "test_runs": len(partition["test_runs"]),
         }
     require_sklearn()
-    every = partition["train"] + partition["test"]
-    shapes = shape.attach(every, shape_root=shape_root)
     train, _ = require_shapes(partition["train"], shapes)
     test, _ = require_shapes(partition["test"], shapes)
     if not train or not test:
@@ -588,13 +589,15 @@ def fit(
     require_sklearn()
     factory = boosting_factory if kind == "boosting" else ridge_factory
     usable = rows_with_targets(rows)
-    usable, _ = require_shapes(
+    usable, dropped = require_shapes(
         usable, shape.attach(usable, shape_root=shape_root)
     )
-    if not usable:
+    report = sufficiency(usable)
+    report["rows_without_shape"] = len(dropped)
+    if not report["fit_allowed"]:
         return {
             "fitted": False,
-            "reason": "no row has a readable shape descriptor",
+            "reason": refusal_reason(report),
             "sufficiency": report,
         }
     matrix = _matrix(
@@ -796,6 +799,7 @@ def save(fitted: dict, destination: Path) -> dict:
         "features": fitted["features"],
         "feature_count": len(feature_names()),
         "shape_count": len(SHAPE_FEATURES),
+        "descriptor_version": shape.DESCRIPTOR_VERSION,
         "targets": fitted["targets"],
         "sklearn_version": fitted.get("sklearn_version"),
         "sufficiency": fitted.get("sufficiency"),
@@ -820,6 +824,11 @@ def load(destination: Path) -> dict:
     destination = Path(destination).expanduser().resolve()
     sidecar = destination.with_suffix(".metadata.json")
     document = json.loads(sidecar.read_text()) if sidecar.is_file() else {}
+    if document.get("descriptor_version") != shape.DESCRIPTOR_VERSION:
+        raise ValueError(
+            "Shape normalization changed; rebuild the dataset and retrain "
+            "this surrogate before loading it"
+        )
     recorded = document.get("sklearn_version")
     current = sklearn_version()
     return {

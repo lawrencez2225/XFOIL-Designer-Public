@@ -351,7 +351,7 @@ class DatasetTest(unittest.TestCase):
         document = json.loads(
             destination.with_suffix(".provenance.json").read_text()
         )
-        self.assertEqual(document["schema_version"], 1)
+        self.assertEqual(document["schema_version"], 2)
         self.assertEqual(document["summary"], summary)
         self.assertEqual(len(document["runs"]), 1)
         self.assertTrue(document["runs"][0]["run_json_sha256"])

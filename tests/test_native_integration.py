@@ -12,6 +12,8 @@ from xfoil_mac.avl import find_avl, run_wing
 from xfoil_mac.data import sha256_file
 from xfoil_mac.runtime import discover_app
 from xfoil_mac.workflows import run_polar
+from xfoil_mac.storage.dataset import collect_rows
+from xfoil_mac.flow import actual_conditions
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -80,6 +82,11 @@ class NativeIntegrationTest(unittest.TestCase):
             "2 2 Reynolds number ~ 1/sqrt(CL)",
             (self.root / "attempts/0001/polar.txt").read_text(),
         )
+        dataset, _ = collect_rows(self.root)
+        for row in dataset:
+            expected = actual_conditions(saved["config"], row["CL"])
+            self.assertAlmostEqual(row["re"], expected[0])
+            self.assertAlmostEqual(row["mach"], expected[1])
         before = {
             str(p): sha256_file(p)
             for p in self.root.glob("attempts/*/*")
@@ -118,6 +125,10 @@ class NativeIntegrationTest(unittest.TestCase):
         for row in rows:
             self.assertAlmostEqual(float(row["Re"]) * float(row["CL"]), 500000)
             self.assertEqual(float(row["Mach"]), 0.1)
+        dataset, _ = collect_rows(self.root)
+        for row in dataset:
+            self.assertAlmostEqual(row["re"] * row["CL"], 500000)
+            self.assertEqual(row["mach"], 0.1)
 
     @unittest.skipUnless(avl_installed(), AVL_MISSING)
     def test_real_avl_target_lift_mach_derivatives_and_resume(self):

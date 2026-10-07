@@ -2,7 +2,11 @@
 
 import json
 import os
+import re
 import zipfile
+import csv
+import io
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 from ..data import atomic_json
@@ -134,17 +138,105 @@ def write_index(app):
 
 
 def export_report(folder: Path, output: Path):
+    """Export selected scientific files with local paths redacted.
+
+    Local originals retain their provenance. Exported JSON fingerprints
+    refer to the original solve and are not valid resume checkpoints.
+    Logs, presets, models and unknown files are excluded from this share.
+    """
     folder = folder.resolve()
     output = output.resolve()
     if not (folder / "report.html").exists():
         raise ValueError("This result has no report yet")
+    patterns = (
+        "report.html",
+        "diagnostics.html",
+        "explorer.html",
+        "wing_3d.html",
+        "run.json",
+        "wing_run.json",
+        "lift_run.json",
+        "job.json",
+        "study.json",
+        "batch.json",
+        "coupling.json",
+        "design_search.json",
+        "diagnostics.json",
+        "direction_check.json",
+        "experiment_report.json",
+        "geometry_report.json",
+        "comparison_manifest.json",
+        "maps.json",
+        "selection.json",
+        "index.json",
+        "*.provenance.json",
+        "polar.txt",
+        "raw.txt",
+        "cp.txt",
+        "cp_alpha_*.txt",
+        "cp_sequence_*.txt",
+        "bl_alpha_*.txt",
+        "bl_sequence_*.txt",
+        "boundary_layer.txt",
+        "totals.txt",
+        "strips.txt",
+        "stability.txt",
+        "geometry.dat",
+        "airfoil_input.dat",
+        "airfoil.dat",
+        "base.dat",
+        "repaired.dat",
+        "flapped.dat",
+        "section_*.dat",
+        "wing.avl",
+        "commands.txt",
+        "README.txt",
+        "polar.csv",
+        "summary.csv",
+        "convergence.csv",
+        "operating_points.csv",
+        "diagnostics.csv",
+        "wing_summary.csv",
+        "spanwise_loads.csv",
+        "wing_drag.csv",
+        "strip_profile_drag.csv",
+        "candidates.csv",
+        "comparison.csv",
+        "panel_sensitivity.csv",
+        "direction_check.csv",
+        "experiment_matches.csv",
+        "selection*.csv",
+        "performance_map.csv",
+        "bl_alpha_*.csv",
+        "dataset_*.csv",
+        "domain_*.csv",
+        "geometry*.png",
+        "wing_*.png",
+        "cp_distribution.png",
+        "cl_vs_*.png",
+        "cd_vs_*.png",
+        "cm_vs_*.png",
+        "lift_to_drag_vs_alpha.png",
+        "pressure_vectors_alpha_*.png",
+        "panel_sensitivity.png",
+        "pareto.png",
+        "experiment_*.png",
+        "condition_*.png",
+        "map_*.png",
+        "bl_alpha_*.png",
+    )
     files = [
         p
         for p in folder.rglob("*")
         if p.is_file()
-        and not p.is_symlink()
+        and not any(q.is_symlink() for q in (p, *p.parents))
         and p.resolve() != output
-        and p.suffix != ".zip"
+        and not any(
+            part.startswith(".")
+            or part in {"settings", "models", "matplotlib_cache", "_cache"}
+            for part in p.relative_to(folder).parts
+        )
+        and any(fnmatchcase(p.name, pattern) for pattern in patterns)
     ]
     if sum(p.stat().st_size for p in files) > 500 * 1024**2:
         raise ValueError("Report exceeds the 500 MB export limit")
@@ -152,9 +244,77 @@ def export_report(folder: Path, output: Path):
     temp = output.with_suffix(".zip.tmp")
     with zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as archive:
         for p in files:
-            archive.write(p, p.relative_to(folder))
+            payload = p.read_bytes()
+            if p.suffix == ".png":
+                # Include only PNG evidence, not an arbitrary renamed binary.
+                if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+                    continue
+                if re.search(rb"/(Users|home|private|var|tmp)/", payload):
+                    continue
+            else:
+                try:
+                    text = payload.decode("utf-8")
+                    if p.suffix == ".json":
+                        content = _share_value(json.loads(text), folder)
+                        text = json.dumps(
+                            content, ensure_ascii=False, indent=2
+                        )
+                    elif p.suffix == ".csv":
+                        buffer = io.StringIO(newline="")
+                        writer = csv.writer(buffer)
+                        for row in csv.reader(io.StringIO(text)):
+                            writer.writerow(
+                                [_share_value(cell, folder) for cell in row]
+                            )
+                        text = buffer.getvalue()
+                    else:
+                        text = _share_value(text, folder)
+                    payload = text.encode("utf-8")
+                except (UnicodeError, ValueError):
+                    continue
+            archive.writestr(str(p.relative_to(folder)), payload)
+        archive.writestr(
+            "SHARING.txt",
+            "Selected scientific evidence; local paths are redacted.\n"
+            "Logs, settings, models and unknown files are excluded.\n"
+            "Retained hashes identify local originals, not redacted copies.\n"
+            "Use the local original directory for resuming a calculation.\n",
+        )
     os.replace(temp, output)
     return output
+
+
+def _share_value(value, folder):
+    """Redact path strings in a share copy, leaving local data untouched."""
+    if isinstance(value, dict):
+        return {
+            _share_value(key, folder): _share_value(item, folder)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_share_value(item, folder) for item in value]
+    if not isinstance(value, str):
+        return value
+    # JSON strings embedded in CSV/HTML can escape '/' without changing
+    # its meaning. File URLs also contain local paths rather than web links.
+    value = value.replace("\\/", "/")
+    value = re.sub(
+        r"file://[^\"'<>\r\n]*", "[local-path]", value, flags=re.IGNORECASE
+    )
+    if Path(value).is_absolute():
+        try:
+            return str(Path(value).resolve().relative_to(folder))
+        except (OSError, ValueError):
+            return "[external-path]"
+    # Whole structured path strings above also cover paths containing spaces.
+    # Embedded paths in HTML, errors and commands are conservatively redacted
+    # through the next quote, HTML boundary or newline.
+    return re.sub(
+        r"(?<![\w:/])(?:/(?:Users|home|private|var|tmp|opt|Volumes|etc)/"
+        r"|[A-Za-z]:[\\/]|\\\\)[^\"'<>\r\n]*",
+        "[local-path]",
+        value,
+    )
 
 
 def spec_from_history(folder):

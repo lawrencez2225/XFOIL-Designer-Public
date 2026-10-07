@@ -26,7 +26,7 @@
 程序会从 `xfoil_mac/` 所在位置向上查找 XFOIL，因此整个项目目录可以移动或改名，但不要拆散以下结构：
 
 ```text
-XFOIL-Designer/
+XFOIL-Designer-Public/
 ├── xfoil_work.py
 ├── xfoil_mac/
 │   ├── cli.py
@@ -49,8 +49,8 @@ XFOIL-Designer/
 
 ```bash
 git lfs install
-git clone https://github.com/lawrencez2225/XFOIL-Designer.git
-cd XFOIL-Designer
+git clone https://github.com/lawrencez2225/XFOIL-Designer-Public.git
+cd XFOIL-Designer-Public
 git lfs pull
 conda env create -f environment.yml
 conda activate xfoil-work
@@ -58,7 +58,7 @@ python -m xfoil_mac --install-airfoils
 python xfoil_work.py
 ```
 
-克隆公开仓库不需要账户权限；若仓库仍为私有，克隆账户必须拥有访问权限。若已经通过其他方式取得完整项目目录，从 `cd XFOIL-Designer` 开始执行即可。
+克隆公开仓库不需要账户权限。若已经通过其他方式取得完整项目目录，从 `cd XFOIL-Designer-Public` 开始执行即可。
 
 `--install-airfoils` 下载翼型坐标数据库到 `coord_seligFmt/`。该数据库有版权且上游未授予分发许可，因此不随仓库分发，需要这一步才能使用数据库筛选等功能。状态可用 `python -m xfoil_mac --airfoil-status` 查看。
 
@@ -128,8 +128,8 @@ git lfs install
 ### 5.2 克隆仓库
 
 ```bash
-git clone https://github.com/lawrencez2225/XFOIL-Designer.git
-cd XFOIL-Designer
+git clone https://github.com/lawrencez2225/XFOIL-Designer-Public.git
+cd XFOIL-Designer-Public
 git lfs pull
 ```
 

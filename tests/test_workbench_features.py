@@ -167,7 +167,9 @@ class WorkbenchFeatureTest(unittest.TestCase):
         import zipfile
 
         with zipfile.ZipFile(output) as z:
-            self.assertEqual(set(z.namelist()), {"report.html", "raw.txt"})
+            self.assertEqual(
+                set(z.namelist()), {"report.html", "raw.txt", "SHARING.txt"}
+            )
 
 
 @unittest.skipUnless(

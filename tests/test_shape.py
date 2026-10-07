@@ -92,19 +92,39 @@ class DescriptorTest(unittest.TestCase):
         self.assertIsNotNone(shape.descriptor(path))
 
     def test_chord_is_normalized_so_an_unscaled_copy_agrees(self):
-        """Only x is normalized, so a chord rescale must not matter.
-
-        y is left in the file's own units: the library stores airfoils at
-        unit chord, and rescaling y would silently change what "thickness"
-        means rather than making the descriptor scale-free.
-        """
+        """A uniform scale preserves dimensionless thickness and camber."""
         first, second = self.root / "s.dat", self.root / "l.dat"
         points = contour(0.12, 0.02)
         write(first, points)
-        write(second, points)
+        write(second, [(2 * x, 2 * y) for x, y in points])
         a, b = shape.descriptor(first), shape.descriptor(second)
         for left, right in zip(a, b):
             self.assertAlmostEqual(left, right, places=6)
+
+    def test_rotation_and_translation_preserve_the_descriptor(self):
+        first, second = self.root / "first.dat", self.root / "second.dat"
+        points = contour(0.12, 0.02)
+        angle = math.radians(25)
+        write(first, points)
+        write(
+            second,
+            [
+                (
+                    3 + x * math.cos(angle) - y * math.sin(angle),
+                    -2 + x * math.sin(angle) + y * math.cos(angle),
+                )
+                for x, y in points
+            ],
+        )
+        for a, b in zip(shape.descriptor(first), shape.descriptor(second)):
+            self.assertAlmostEqual(a, b, places=6)
+
+    def test_nonfinite_and_malformed_shapes_are_refused(self):
+        path = self.root / "bad.dat"
+        for row in ("nan 0", "bad coordinate"):
+            write(path, contour(0.12, 0.02))
+            path.write_text(path.read_text() + row + "\n")
+            self.assertIsNone(shape.descriptor(path))
 
     def test_a_leading_edge_shift_does_not_change_the_descriptor(self):
         shifted, plain = self.root / "sh.dat", self.root / "pl.dat"
@@ -166,6 +186,23 @@ class AttachTest(unittest.TestCase):
 
     def test_the_default_root_points_at_the_airfoil_library(self):
         self.assertEqual(shape.COORDINATE_ROOT.name, "coord_seligFmt")
+
+    def test_saved_geometry_takes_precedence_and_names_do_not_alias(self):
+        rows = []
+        for name, thickness in (("first", 0.09), ("second", 0.18)):
+            folder = self.root / name
+            folder.mkdir()
+            write(folder / "geometry.dat", contour(thickness, 0))
+            rows.append({"airfoil": "one", "case_dir": str(folder)})
+        values = shape.attach(rows, shape_root=self.root)
+        self.assertEqual(len(values), 2)
+        thin = values[shape.row_key(rows[0])]
+        thick = values[shape.row_key(rows[1])]
+        self.assertAlmostEqual(thick[3] / thin[3], 2, places=5)
+
+    def test_missing_saved_geometry_is_not_replaced_by_library_geometry(self):
+        row = {"airfoil": "one", "case_dir": str(self.root / "missing")}
+        self.assertEqual(shape.attach([row], shape_root=self.root), {})
 
 
 if __name__ == "__main__":

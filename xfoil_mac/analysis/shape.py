@@ -17,6 +17,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..geometry import inspect_points, load_coordinates
+
+DESCRIPTOR_VERSION = 2
+
 STATIONS = (0.02, 0.06, 0.14, 0.25, 0.36, 0.47, 0.58, 0.69, 0.80, 0.85, 0.90)
 """Chord fractions the distributions are sampled at.
 
@@ -37,24 +41,6 @@ CAMBER_NAMES = tuple(f"camber_at_{value:g}" for value in STATIONS)
 FEATURE_NAMES = THICKNESS_NAMES + CAMBER_NAMES
 
 COORDINATE_ROOT = Path("coord_seligFmt")
-
-
-def _pairs(path: Path) -> list:
-    """Numeric pairs from a coordinate file; empty when it cannot be read."""
-    try:
-        text = path.read_text(errors="replace")
-    except OSError:
-        return []
-    points = []
-    for line in text.splitlines():
-        fields = line.split()
-        if len(fields) < 2:
-            continue
-        try:
-            points.append((float(fields[0]), float(fields[1])))
-        except ValueError:
-            continue
-    return points
 
 
 def _interpolate(sequence: list, x: float) -> float | None:
@@ -89,15 +75,12 @@ def descriptor(path: Path) -> list | None:
     The contour is normalized to unit chord first, so a file that is
     stored at a different scale still yields comparable numbers.
     """
-    points = _pairs(Path(path))
-    if len(points) < 5:
+    try:
+        report, points = inspect_points(load_coordinates(Path(path)))
+    except (OSError, ValueError):
         return None
-    xs = [p[0] for p in points]
-    chord = max(xs) - min(xs)
-    if chord <= 0:
+    if not report["valid"]:
         return None
-    low = min(xs)
-    points = [((x - low) / chord, y) for x, y in points]
     leading = min(range(len(points)), key=lambda i: points[i][0])
     upper, lower = points[: leading + 1], points[leading:]
     if not upper or not lower:
@@ -125,7 +108,7 @@ def descriptor_for(airfoil: str, root: Path = COORDINATE_ROOT) -> list | None:
 
 
 _CACHE: dict = {}
-"""Descriptors already read, keyed by (root, name).
+"""Descriptors already read, keyed by file and modification signature.
 
 Reading coordinates is file I/O and a row set repeats the same
 airfoil across every angle it was solved at, so without this a
@@ -134,24 +117,42 @@ times over.
 """
 
 
+def row_key(row: dict) -> str:
+    """Keep saved geometries distinct even when their airfoil names agree."""
+    if row.get("case_dir"):
+        return str(Path(row["case_dir"]) / "geometry.dat")
+    return str(row.get("airfoil") or "")
+
+
 def attach(
     rows: list, root: Path | None = None, *, shape_root: Path | None = None
 ) -> dict:
     """Read descriptors for the airfoils a row set mentions, once each.
 
-    Returns a mapping from airfoil name to descriptor. Names that cannot
-    be resolved are absent rather than present with a placeholder, so a
-    caller can tell "no shape" from "a shape that happens to be zero".
+    Saved case geometry takes precedence over the coordinate library.
+    Keys are produced by ``row_key`` so different solved shapes sharing
+    a name cannot alias. Missing saved geometry is never replaced with
+    a library approximation or a zero-filled descriptor.
     """
-    names = sorted(
-        {str(row.get("airfoil")) for row in rows if row.get("airfoil")}
-    )
     where = shape_root if shape_root is not None else (root or COORDINATE_ROOT)
     found = {}
-    for name in names:
-        key = (str(where), name)
+    sources = {
+        row_key(row): (
+            Path(row["case_dir"]) / "geometry.dat"
+            if row.get("case_dir")
+            else Path(where) / f"{row['airfoil']}.dat"
+        )
+        for row in rows
+        if row.get("case_dir") or row.get("airfoil")
+    }
+    for name, path in sorted(sources.items()):
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        key = (str(path.resolve()), stat.st_mtime_ns, stat.st_size)
         if key not in _CACHE:
-            _CACHE[key] = descriptor_for(name, where)
+            _CACHE[key] = descriptor(path)
         value = _CACHE[key]
         if value is not None:
             found[name] = value

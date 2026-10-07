@@ -13,14 +13,15 @@ POLAR_HEADER = "alpha,CL,CD,CDp,CM,Top_Xtr,Bot_Xtr,Top_Itr,Bot_Itr"
 STATIONS = 20
 
 
-def _dump(separated):
+def _dump(separated, points):
     lines = []
-    for index in range(2 * STATIONS):
-        offset = index if index < STATIONS else 2 * STATIONS - 1 - index
-        ends = offset < 2 or offset >= STATIONS - 2
+    leading = min(range(len(points)), key=lambda i: points[i][0])
+    for index, (x, y) in enumerate(points):
+        ends = (
+            index < 2 or abs(index - leading) < 2 or index >= len(points) - 2
+        )
         Cf = -0.003 if (separated and ends) else 0.002
-        x = 1.0 - offset / (STATIONS - 1)
-        lines.append(f"{index * 0.01} {x} 0.0 1.0 0.01 0.005 {Cf} 2.0")
+        lines.append(f"{index * 0.01} {x} {y} 1.0 0.01 0.005 {Cf} 2.0")
     return "\n".join(lines) + "\n"
 
 
@@ -61,7 +62,7 @@ def write_run(root, name, *, thickness, camber, alphas, separated_at):
     for alpha in alphas:
         label = f"{alpha:g}".replace("-", "m").replace(".", "p")
         (layer / f"bl_alpha_{label}.txt").write_text(
-            _dump(alpha >= separated_at)
+            _dump(alpha >= separated_at, _contour(thickness, camber))
         )
     return run_dir
 

@@ -19,6 +19,9 @@ import math
 import re
 from pathlib import Path
 
+from ..geometry import load_coordinates, normalize
+from .boundary_layer import read_boundary_layer
+
 # Column order of XFOIL's DUMP output, confirmed against the reader in
 # boundary_layer.py: s, x, y, Ue/Vinf, Dstar, Theta, Cf, H. The header
 # written into the file names further variables that the data rows do not
@@ -50,7 +53,10 @@ DUMP_COLUMNS = ("s", "x", "y", "Ue_Vinf", "Dstar", "Theta", "Cf", "H")
 # thickness rather than the solver leaving its domain.
 LONGEST_RUN_FLAG = 0.25
 """Longest continuous separated run, as a chord fraction, above which a
-surface is reported as separated over a large part of the chord."""
+surface is screened as suspect. This geometric threshold is provisional:
+the older station-count calibration does not validate a length threshold.
+It is not a physical validity boundary.
+"""
 
 EXTREME_SHAPE_FACTOR = 30.0
 """Peak kinematic shape factor recorded as a non-physical value.
@@ -96,18 +102,20 @@ def read_dump(path: Path) -> list[dict]:
     records = []
     for line in path.read_text(errors="replace").splitlines():
         fields = line.split()
-        if not fields:
+        if not fields or fields[0].startswith("#"):
+            continue
+        if not records and [f.lower() for f in fields[:3]] == ["s", "x", "y"]:
             continue
         try:
             values = [
                 float(v.replace("D", "E").replace("d", "e")) for v in fields
             ]
-        except ValueError:
-            continue
+        except ValueError as error:
+            raise ValueError("Invalid boundary-layer number") from error
         if len(values) < len(DUMP_COLUMNS):
-            continue
+            raise ValueError("Incomplete boundary-layer record")
         if not all(math.isfinite(v) for v in values[: len(DUMP_COLUMNS)]):
-            continue
+            raise ValueError("Nonfinite boundary-layer record")
         records.append(dict(zip(DUMP_COLUMNS, values)))
     return records
 
@@ -137,6 +145,11 @@ def split_surfaces(records: list[dict]) -> tuple[list[dict], list[dict]]:
     """
     if len(records) < 3:
         return [], []
+    if all("surface" in r for r in records):
+        return (
+            [r for r in records if r["surface"] == "upper"],
+            [r for r in records if r["surface"] == "lower"],
+        )
     leading = min(range(len(records)), key=lambda i: records[i]["x"])
     if leading in (0, len(records) - 1):
         return [], []
@@ -158,25 +171,37 @@ def separated_runs(surface: list[dict]) -> list[dict]:
     span between them as separated length would overstate separation by a
     wide margin.
     """
+
+    # x is normalized by the full airfoil chord, not each surface's
+    # sampled extent. Assume Cf varies linearly between adjacent stations.
+    def crossing(a, b):
+        weight = -a["Cf"] / (b["Cf"] - a["Cf"])
+        return a["x"] + weight * (b["x"] - a["x"])
+
     runs = []
-    current = []
-    for record in surface:
-        if record["Cf"] < 0:
-            current.append(record)
+    index = 0
+    while index < len(surface):
+        if surface[index]["Cf"] >= 0:
+            index += 1
             continue
-        if current:
-            runs.append(current)
-            current = []
-    if current:
-        runs.append(current)
-    return [
-        {
-            "stations": len(run),
-            "x_start": min(r["x"] for r in run),
-            "x_end": max(r["x"] for r in run),
-        }
-        for run in runs
-    ]
+        first = index
+        while index + 1 < len(surface) and surface[index + 1]["Cf"] < 0:
+            index += 1
+        start = surface[first]["x"]
+        end = surface[index]["x"]
+        if first:
+            start = crossing(surface[first - 1], surface[first])
+        if index + 1 < len(surface):
+            end = crossing(surface[index], surface[index + 1])
+        runs.append(
+            {
+                "stations": index - first + 1,
+                "x_start": min(start, end),
+                "x_end": max(start, end),
+            }
+        )
+        index += 1
+    return runs
 
 
 def surface_evidence(surface: list[dict]) -> dict:
@@ -195,13 +220,12 @@ def surface_evidence(surface: list[dict]) -> dict:
     Cf = [r["Cf"] for r in surface]
     H = [r["H"] for r in surface]
     runs = separated_runs(surface)
-    separated = sum(run["stations"] for run in runs)
-    longest = max((run["stations"] for run in runs), default=0)
+    lengths = [run["x_end"] - run["x_start"] for run in runs]
     peak = max(range(len(H)), key=lambda i: H[i])
     return {
         "stations": len(surface),
-        "separated_fraction": separated / len(surface),
-        "longest_run_fraction": longest / len(surface),
+        "separated_fraction": sum(lengths),
+        "longest_run_fraction": max(lengths, default=0.0),
         "run_count": len(runs),
         "runs": runs,
         "max_h": H[peak],
@@ -284,25 +308,44 @@ def sweep_report(
     requested |= failed
 
     points = []
+    try:
+        geometry = load_coordinates(case_dir / "geometry.dat")
+        geometry_error = None
+    except (OSError, ValueError) as error:
+        geometry = []
+        geometry_error = str(error)
     for alpha in sorted(requested):
         key = round(float(alpha), 6)
         converged = key not in failed
         path = dumps.get(key)
         upper = lower = {}
+        output_error = None
         if path is not None:
-            up_records, lo_records = split_surfaces(read_dump(path))
-            upper = surface_evidence(up_records)
-            lower = surface_evidence(lo_records)
+            try:
+                if geometry_error is not None:
+                    raise ValueError(geometry_error)
+                records = read_boundary_layer(path, geometry)
+                normalized, _ = normalize(geometry)
+                for record, (x, _) in zip(records, normalized):
+                    record["x"] = x
+                up_records, lo_records = split_surfaces(records)
+                upper = surface_evidence(up_records)
+                lower = surface_evidence(lo_records)
+            except (OSError, ValueError) as error:
+                output_error = str(error)
         governing = worst_surface(upper, lower)
         verdict, reasons = point_verdict(
             evidence=governing, converged=converged
         )
+        if output_error is not None:
+            verdict, reasons = "invalid", ["invalid_boundary_layer_output"]
         points.append(
             {
                 "alpha": float(alpha),
                 "verdict": verdict,
                 "reasons": reasons,
                 "converged": converged,
+                "output_error": output_error,
                 "governing_surface": (
                     "upper"
                     if governing is upper and upper
@@ -336,7 +379,7 @@ def mark_isolated_failures(points: list[dict]) -> None:
         if point["converged"] and point["verdict"] != "invalid"
     )
     for point in points:
-        if point["converged"]:
+        if point["converged"] or point.get("output_error"):
             continue
         left = [a for a in usable if a < point["alpha"]]
         right = [a for a in usable if a > point["alpha"]]

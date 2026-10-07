@@ -15,13 +15,15 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from pathlib import Path
 
 from ..analysis.trust import sweep_report
 from ..data import atomic_json, sha256_file, timestamp_label
 from ..geometry import inspect_points, load_coordinates
+from ..flow import actual_conditions
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 COLUMNS = (
     "run_id",
@@ -38,6 +40,11 @@ COLUMNS = (
     "re",
     "mach",
     "flow_relation",
+    "re_reference",
+    "mach_reference",
+    "flow_type",
+    "reference_cl",
+    "condition_status",
     "alpha",
     "CL",
     "CD",
@@ -152,7 +159,7 @@ def _number(value) -> float | None:
         number = float(value)
     except (TypeError, ValueError):
         return None
-    return number
+    return number if math.isfinite(number) else None
 
 
 def _text(value) -> str | None:
@@ -185,10 +192,11 @@ def load_run(run_dir: Path, root: Path) -> dict:
         "airfoil": document.get("airfoil"),
         "geometry_kind": source.get("kind"),
         "naca": source.get("naca"),
-        "coordinate_file": source.get("airfoil"),
+        "coordinate_file": source.get("path", source.get("airfoil")),
         "re": _number(config.get("re")),
         "mach": _number(config.get("mach")),
         "flow_relation": config.get("flow_relation"),
+        "flow_config": config,
         "ncrit": _number(settings.get("ncrit")),
         "xtr_top": _number(settings.get("xtr_top")),
         "xtr_bottom": _number(settings.get("xtr_bottom")),
@@ -210,6 +218,21 @@ def _row_for(run: dict, alpha: float) -> dict:
     governing = point.get("governing_surface")
     evidence = point.get(governing) if governing else None
     evidence = evidence or point.get("upper") or point.get("lower") or {}
+    cl = _number(polar.get("CL"))
+    condition = None
+    condition_status = "missing_lift"
+    if cl is not None:
+        try:
+            condition = actual_conditions(run["flow_config"], cl)
+            if condition is not None and (
+                not all(math.isfinite(v) for v in condition)
+                or condition[0] <= 0
+                or not 0 <= condition[1] < 1
+            ):
+                condition = None
+            condition_status = "ok" if condition else "invalid_condition"
+        except (KeyError, TypeError, ValueError):
+            condition_status = "invalid_condition"
     row = {
         "run_id": run["run_id"],
         "case_dir": run["case_dir"],
@@ -217,9 +240,14 @@ def _row_for(run: dict, alpha: float) -> dict:
         "geometry_kind": _text(run["geometry_kind"]),
         "naca": _text(run["naca"]),
         "coordinate_file": _text(run["coordinate_file"]),
-        "re": run["re"],
-        "mach": run["mach"],
+        "re": condition[0] if condition else None,
+        "mach": condition[1] if condition else None,
         "flow_relation": run.get("flow_relation"),
+        "re_reference": run["re"],
+        "mach_reference": run["mach"],
+        "flow_type": run["flow_config"].get("flow_type", 1),
+        "reference_cl": run["flow_config"].get("reference_cl", 1.0),
+        "condition_status": condition_status,
         "alpha": key,
         "CL": _number(polar.get("CL")),
         "CD": _number(polar.get("CD")),
