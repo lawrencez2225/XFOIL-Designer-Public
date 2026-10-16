@@ -42,6 +42,7 @@ dependencies = [
 # Surrogate fitting and multi-fidelity design search. Imported lazily by
 # xfoil_mac/analysis/surrogate.py, so the core workflow runs without them.
 surrogate = ["scikit-learn", "joblib"]
+mlx = ["mlx>=0.30"]
 # Keep local formatting identical to the CI check.
 dev = ["black==26.10.0", "flake8==7.4.1"]
 

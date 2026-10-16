@@ -270,7 +270,8 @@ python surrogate_tool.py predict --coordinates=/path/to/my_airfoil.dat \
 ### 重新训练（数据增加后）
 
 ```sh
-python surrogate_tool.py train
+python surrogate_tool.py train                  # 默认 sklearn 树模型
+python surrogate_tool.py train --backend=mlx    # Apple Silicon GPU 深度集成 + 核注意力
 ```
 
 数据不足时会**拒绝拟合并列出缺口**，例如：
@@ -280,6 +281,35 @@ python surrogate_tool.py train
   A fit was not attempted. mach takes 1 distinct value(s); need 4 to
   learn it. Solve more configurations before expecting transferable
   predictions.
+```
+
+### MLX 深度集成与可微反设计（`xfoil_mac/analysis/mlx_surrogate.py`）
+
+在 `mlx` 环境下，除了输出预测均值，还会给出集成认知不确定度（`±std`）与特征空间分布外距离（`OOD`），并支持基于 `mx.grad` 的逆向求解与光滑翼型修形：
+
+```sh
+conda activate mlx
+
+# 1. 带不确定度与 OOD 距离的极曲线预测
+python surrogate_tool.py predict \
+    --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+    --coordinates=examples/airfoils/naca2412.dat --re=500000 --mach=0.10 --alpha=4.0
+
+# 2. 给定目标 CL*，利用 mx.grad 牛顿迭代反解攻角 α* 并查看 22 站位几何敏感度
+python surrogate_tool.py target-cl \
+    --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+    --coordinates=examples/airfoils/naca2412.dat --re=500000 --mach=0.10 --cl=0.85
+
+# 3. 基于 mx.grad + Hicks-Henne 光滑模态自动修形，导出新 .dat
+python surrogate_tool.py optimize \
+    --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+    --coordinates=examples/airfoils/naca2412.dat --out=xfoil_runs/naca2412_opt.dat \
+    --re=500000 --mach=0.10 --alpha=4.0 --steps=25
+
+# 4. 使用保守置信下界（LCB）初筛翼型库并用 XFOIL 复核
+python prescreen.py \
+    --airfoils=coord_seligFmt --re=500000 --mach=0.10 \
+    --target-cl=0.8 --keep=40 --backend=mlx --lcb=1.0
 ```
 
 ### 怎么判断它对你的场景好不好用
@@ -356,6 +386,7 @@ MPLBACKEND=Agg XFOIL_NATIVE_TESTS=1 python -m unittest discover -s tests -v
 | `tests/test_sampling.py` | 网格、成本、域感知估计 |
 | `tests/test_shape.py` | 描述符提取与拒绝规则 |
 | `tests/test_surrogate.py` | 划分、留出评估、审计日志、置信区间 |
+| `tests/test_mlx_surrogate.py` | MLX 惰性导入、翼型零重叠划分、端到端拟合/反解 α/Hicks-Henne 修形 |
 | `tests/test_dataset.py` | 数据集构建，含"失败点保留行" |
 | `tests/test_parallel.py` | 连续分块与顺序保持 |
 | `tests/test_mach_bounds.py` | Mach 接受范围（0.3 不是上限） |

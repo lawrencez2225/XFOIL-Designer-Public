@@ -66,10 +66,45 @@ MPLBACKEND=Agg XFOIL_NATIVE_TESTS=1 python -m unittest discover -s tests -v
 
 ```sh
 pip install -e .                # 核心：numpy、matplotlib、tqdm
-pip install -e ".[surrogate]"   # 追加 scikit-learn、joblib，用于设计搜索
+pip install -e ".[surrogate]"   # 追加 scikit-learn、joblib，用于树模型代理与设计搜索
+pip install -e ".[mlx]"         # 追加 mlx>=0.30，用于 Apple Silicon GPU 深度集成与可微反设计
 ```
 
 必须是可编辑安装：程序从包目录向上查找 `XFOIL_6.996/`，仓库结构不能拆散；装进 `site-packages` 的普通安装找不到内置求解器。
+
+## MLX 气动代理模型与可微反设计（Apple Silicon GPU）
+
+除 `scikit-learn` 树模型外，项目提供基于 Apple Silicon 统一内存与 Metal GPU 的原生 **MLX 物理引导深度集成（Deep Ensemble + 残差核注意力）** 后端（`xfoil_mac/analysis/mlx_surrogate.py`），严格遵循 `SPLIT_SEED = 20260101`、充分性门禁与 `trusted`/`flagged` 分层评估纪律，并支持不确定度量化、定升力攻角反解与端到端翼型几何反设计：
+
+```sh
+conda activate mlx
+
+# 1. 训练 MLX 深度集成代理模型（输出 .npz 权重与 .metadata.json）
+python surrogate_tool.py train \
+  --dataset=xfoil_runs/datasets/dataset_latest.csv \
+  --backend=mlx
+
+# 2. 预测气动系数（同时输出集成标准差 ±std 与特征空间 OOD 距离）
+python surrogate_tool.py predict \
+  --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+  --coordinates=examples/airfoils/naca2412.dat --re=500000 --mach=0.10 --alpha=4.0
+
+# 3. 给定目标升力系数 CL*，利用 mx.grad 牛顿迭代反解攻角 α* 与 22 站位几何敏感度
+python surrogate_tool.py target-cl \
+  --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+  --coordinates=examples/airfoils/naca2412.dat --re=500000 --mach=0.10 --cl=0.85
+
+# 4. 基于 mx.grad + Hicks-Henne 光滑模态自动修形，优化保守升阻比下界并导出新 .dat
+python surrogate_tool.py optimize \
+  --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+  --coordinates=examples/airfoils/naca2412.dat --out=xfoil_runs/naca2412_opt.dat \
+  --re=500000 --mach=0.10 --alpha=4.0 --steps=25
+
+# 5. 使用保守置信下界（LCB）初筛翼型库并调用原生 XFOIL 复核入选名单
+python prescreen.py \
+  --airfoils=coord_seligFmt --re=500000 --mach=0.10 \
+  --target-cl=0.8 --keep=40 --backend=mlx --lcb=1.0
+```
 
 ## 许可证
 

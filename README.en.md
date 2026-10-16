@@ -79,13 +79,46 @@ From a clone, an **editable** install gives you the `xfoil-designer` console
 command:
 
 ```bash
-pip install -e .             # core: numpy, matplotlib, tqdm
+pip install -e .               # core: numpy, matplotlib, tqdm
 pip install -e ".[surrogate]"  # adds scikit-learn, joblib for design search
+pip install -e ".[mlx]"        # adds mlx>=0.30 for Apple Silicon GPU deep ensemble & inverse design
 ```
 
 Editable mode matters: the program locates `XFOIL_6.996/` by walking up from
 the package directory, so the repository layout must stay intact. A regular
 `pip install` into `site-packages` will not find the bundled solver.
+
+### MLX Surrogate & Differentiable Inverse Design (Apple Silicon GPU)
+
+In addition to the `scikit-learn` tree surrogate, `xfoil_mac/analysis/mlx_surrogate.py`
+provides a physics-guided MLX deep ensemble + GPU residual kernel attention backend
+with epistemic uncertainty (`±std`), out-of-distribution (`OOD`) distance,
+exact `mx.grad` Newton angle-of-attack solving, and smooth $C^\infty$ Hicks-Henne
+inverse airfoil optimization:
+
+```bash
+conda activate mlx
+
+# Train the MLX deep ensemble (.npz weights + .metadata.json)
+python surrogate_tool.py train --dataset=xfoil_runs/datasets/dataset_latest.csv --backend=mlx
+
+# Predict CL/CD/CM with ensemble uncertainty (±std) and OOD distance
+python surrogate_tool.py predict --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+  --coordinates=examples/airfoils/naca2412.dat --re=500000 --mach=0.10 --alpha=4.0
+
+# Solve exact alpha* for a target CL* via mx.grad and inspect 22-station shape sensitivity
+python surrogate_tool.py target-cl --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+  --coordinates=examples/airfoils/naca2412.dat --re=500000 --mach=0.10 --cl=0.85
+
+# Optimize airfoil coordinates via smooth Hicks-Henne modes and export a new .dat
+python surrogate_tool.py optimize --model=xfoil_runs/models/surrogate_mlx_latest.npz \
+  --coordinates=examples/airfoils/naca2412.dat --out=xfoil_runs/naca2412_opt.dat \
+  --re=500000 --mach=0.10 --alpha=4.0 --steps=25
+
+# Pre-screen candidate airfoils using a conservative Lower Confidence Bound (LCB)
+python prescreen.py --airfoils=coord_seligFmt --re=500000 --mach=0.10 \
+  --target-cl=0.8 --keep=40 --backend=mlx --lcb=1.0
+```
 
 ### Installing AVL (optional, for wing analysis)
 
