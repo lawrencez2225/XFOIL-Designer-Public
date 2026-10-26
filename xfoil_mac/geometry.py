@@ -255,26 +255,56 @@ def inspect_file(
         report["repaired_file"] = "repaired.dat"
     else:
         (destination / "repaired.dat").unlink(missing_ok=True)
-    fig, axes = plt.subplots(2, 1, figsize=(11, 6), constrained_layout=True)
+    from .plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_TEXT,
+        apply_dark_engineering_style,
+        style_dark_legend,
+    )
+
+    fig, axes = plt.subplots(
+        2, 1, figsize=(11, 6), constrained_layout=True, facecolor=DARK_BG
+    )
+    apply_dark_engineering_style(fig, axes)
     axes[0].plot(
-        *zip(*points), ".-", label="Original coordinates", linewidth=1
+        *zip(*points),
+        ".-",
+        label="Original coordinates",
+        linewidth=1.5,
+        color="#38bdf8",
     )
     axes[1].plot(
         *zip(*normalize(points)[0]),
         ".-",
         label="Original after coordinate transform",
-        alpha=0.5,
+        alpha=0.55,
+        color="#f59e0b",
     )
-    axes[1].plot(*zip(*clean), "-", label="Proposed copy", linewidth=1.4)
+    axes[1].plot(
+        *zip(*clean),
+        "-",
+        label="Proposed copy",
+        linewidth=1.8,
+        color="#10b981",
+    )
     for ax in axes:
         ax.set_aspect("equal", adjustable="datalim")
-        ax.grid(alpha=0.2)
-        ax.legend()
-    axes[0].set_title(source.name)
+        ax.set_xlabel("x/c", color=DARK_MUTED)
+        ax.set_ylabel("y/c", color=DARK_MUTED)
+        ax.grid(True, color=DARK_GRID, alpha=0.85)
+        leg = ax.legend()
+        style_dark_legend(leg)
+    axes[0].set_title(source.name, color="#38bdf8", fontweight="bold")
     axes[1].set_title(
-        "Normalization / order / duplicate removal only; shape is not smoothed"
+        "Normalization / order / duplicate removal only; shape is not smoothed",
+        color="#38bdf8",
+        fontweight="bold",
     )
-    fig.savefig(destination / "geometry_preview.png", dpi=160)
+    fig.savefig(
+        destination / "geometry_preview.png", dpi=160, facecolor=DARK_BG
+    )
     plt.close(fig)
     atomic_json(destination / "geometry_report.json", report)
     return destination / "geometry_report.json"

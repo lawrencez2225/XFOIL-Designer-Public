@@ -81,6 +81,18 @@ def history(app, include_archive=False):
                 )
             except (OSError, ValueError, KeyError):
                 continue
+    mdo_report = root / "mdo_outputs" / "report.html"
+    if mdo_report.is_file() and (root / "mdo_outputs") not in job_roots:
+        results.append(
+            {
+                "id": "mdo_outputs",
+                "kind": "mdo",
+                "title": "6D Aero-Structural MDO · 三范式与 3D 机翼耦合",
+                "status": "ok",
+                "created": str(mdo_report.stat().st_mtime),
+                "report": "mdo_outputs/report.html",
+            }
+        )
     return sorted(
         results,
         key=lambda r: max(
@@ -91,6 +103,7 @@ def history(app, include_archive=False):
                     "run.json",
                     "wing_run.json",
                     "lift_run.json",
+                    "report.html",
                 )
                 if (p := root / r["id"] / name).is_file()
             ),
@@ -224,6 +237,9 @@ def export_report(folder: Path, output: Path):
         "condition_*.png",
         "map_*.png",
         "bl_alpha_*.png",
+        "three_paradigms_comparison.png",
+        "multipoint_envelope_matrix.png",
+        "xfoil_3d_wing_integration.png",
     )
     files = [
         p
@@ -329,6 +345,12 @@ def spec_from_history(folder):
             "model": clean_model(
                 json.loads((folder / "wing_run.json").read_text())["config"]
             ),
+        }
+    if (folder / "three_paradigms_comparison.png").exists():
+        return {
+            "kind": "mdo",
+            "title": "6D Aero-Structural MDO · 三范式与 3D 机翼耦合",
+            "mdo": {},
         }
     path = folder / (
         "run.json" if (folder / "run.json").exists() else "lift_run.json"

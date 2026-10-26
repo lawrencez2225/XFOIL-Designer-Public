@@ -1,4 +1,4 @@
-"""Plot geometry, Cp, pressure vectors and polars from validated data."""
+"""Plot geometry, Cp, pressure vectors and polars from validated data (Unified Dark Engineering Style)."""
 
 from __future__ import annotations
 
@@ -8,9 +8,83 @@ from typing import Sequence, TypedDict
 
 from .data import alpha_file_label, gapped_rows, parse_cp_file, row_for_alpha
 
-GEOMETRY_COLOR = "#0000ce"
-UPPER_SURFACE_COLOR = "#2563eb"
-LOWER_SURFACE_COLOR = "#dc2626"
+# Unified Dark-Mode Engineering Palette (matching MLX Aero-Structural MDO HUD)
+DARK_BG = "#04070e"
+DARK_PANEL = "#0b101b"
+DARK_BORDER = "#38bdf8"
+DARK_GRID = "#162032"
+DARK_TEXT = "#e2e8f0"
+DARK_MUTED = "#94a3b8"
+
+GEOMETRY_COLOR = "#38bdf8"       # Neon Cyan
+LOWER_GEOM_COLOR = "#10b981"     # Emerald Green
+CAMBER_COLOR = "#e2e8f0"         # Crisp White-Slate dashed camberline
+UPPER_SURFACE_COLOR = "#38bdf8"  # Neon Cyan (Upper Surface Suction)
+LOWER_SURFACE_COLOR = "#f43f5e"  # Rose Red (Lower Surface Pressure)
+AMBER_COLOR = "#f59e0b"
+PURPLE_COLOR = "#a855f7"
+
+HUD_FONT_FAMILY = "XFOIL HUD 5x7"
+_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+HUD_FONT_REGULAR_PATH = _ASSETS_DIR / "xfoil_hud_5x7.ttf"
+HUD_FONT_BOLD_PATH = _ASSETS_DIR / "xfoil_hud_5x7_bold.ttf"
+_HUD_FONT_REGISTERED = False
+
+
+def _ensure_hud_font() -> None:
+    """Register the 5x7 HUD pixel TrueType font with Matplotlib and set global rcParams."""
+    global _HUD_FONT_REGISTERED
+    try:
+        import matplotlib
+        from matplotlib import font_manager
+
+        if not _HUD_FONT_REGISTERED:
+            for font_path in (HUD_FONT_REGULAR_PATH, HUD_FONT_BOLD_PATH):
+                if font_path.exists():
+                    if not any(
+                        getattr(f, "fname", None) == str(font_path)
+                        for f in font_manager.fontManager.ttflist
+                    ):
+                        font_manager.fontManager.addfont(str(font_path))
+            _HUD_FONT_REGISTERED = True
+
+        matplotlib.rcParams["font.family"] = "sans-serif"
+        matplotlib.rcParams["font.sans-serif"] = [
+            HUD_FONT_FAMILY,
+            "PingFang SC",
+            "Heiti TC",
+            "DejaVu Sans Mono",
+        ]
+        matplotlib.rcParams["font.monospace"] = [
+            HUD_FONT_FAMILY,
+            "PingFang SC",
+            "DejaVu Sans Mono",
+        ]
+        matplotlib.rcParams["axes.unicode_minus"] = False
+        matplotlib.rcParams["axes.titlecolor"] = GEOMETRY_COLOR
+        matplotlib.rcParams["axes.labelcolor"] = DARK_MUTED
+        matplotlib.rcParams["xtick.color"] = DARK_MUTED
+        matplotlib.rcParams["ytick.color"] = DARK_MUTED
+        matplotlib.rcParams["text.color"] = DARK_TEXT
+    except Exception:
+        pass
+
+
+DARK_SERIES_PALETTE = (
+    "#38bdf8",
+    "#10b981",
+    "#f59e0b",
+    "#f43f5e",
+    "#a855f7",
+    "#22d3ee",
+    "#eab308",
+    "#ec4899",
+    "#60a5fa",
+    "#34d399",
+    "#fb923c",
+    "#c084fc",
+)
+
 RESULT_PLOT_FILENAMES = (
     "cp_distribution.png",
     "cl_vs_alpha.png",
@@ -26,23 +100,119 @@ class PlotOutputs(TypedDict):
     pressure_vectors: list[Path]
 
 
+def apply_dark_engineering_style(fig, axes=None) -> None:
+    """Apply unified dark-mode HUD engineering theme and 5x7 pixel font."""
+    _ensure_hud_font()
+    fig.patch.set_facecolor(DARK_BG)
+    if axes is None:
+        ax_list = list(fig.axes)
+    elif hasattr(axes, "flat"):
+        ax_list = list(axes.flat)
+    elif hasattr(axes, "__iter__"):
+        ax_list = list(axes)
+    else:
+        ax_list = [axes]
+
+    for txt in getattr(fig, "texts", ()):
+        txt.set_fontfamily(HUD_FONT_FAMILY)
+
+    for ax in ax_list:
+        ax.set_facecolor(DARK_PANEL)
+        ax.tick_params(colors=DARK_MUTED, which="both", labelsize=8.5)
+        ax.xaxis.label.set_color(DARK_MUTED)
+        ax.yaxis.label.set_color(DARK_MUTED)
+        ax.xaxis.label.set_fontfamily(HUD_FONT_FAMILY)
+        ax.yaxis.label.set_fontfamily(HUD_FONT_FAMILY)
+        ax.xaxis.label.set_fontsize(9.0)
+        ax.yaxis.label.set_fontsize(9.0)
+        ax.title.set_color(GEOMETRY_COLOR)
+        ax.title.set_fontfamily(HUD_FONT_FAMILY)
+        ax.title.set_fontsize(10.5)
+        for lbl in list(ax.get_xticklabels()) + list(ax.get_yticklabels()):
+            lbl.set_fontfamily(HUD_FONT_FAMILY)
+        for txt in getattr(ax, "texts", ()):
+            txt.set_fontfamily(HUD_FONT_FAMILY)
+        if hasattr(ax, "zaxis"):
+            ax.zaxis.label.set_color(DARK_MUTED)
+            ax.zaxis.label.set_fontfamily(HUD_FONT_FAMILY)
+            for lbl in ax.get_zticklabels():
+                lbl.set_fontfamily(HUD_FONT_FAMILY)
+            ax.zaxis.set_pane_color((0.043, 0.063, 0.106, 0.92))
+            ax.xaxis.set_pane_color((0.043, 0.063, 0.106, 0.92))
+            ax.yaxis.set_pane_color((0.043, 0.063, 0.106, 0.92))
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#2ea8ff")
+            spine.set_linewidth(1.0)
+
+
+def style_dark_legend(legend) -> None:
+    """Style a matplotlib legend for the unified dark HUD engineering theme."""
+    if legend is None:
+        return
+    _ensure_hud_font()
+    frame = legend.get_frame()
+    frame.set_facecolor("#090d16")
+    frame.set_edgecolor("#2ea8ff")
+    frame.set_linewidth(0.8)
+    frame.set_alpha(0.92)
+    if legend.get_title() is not None:
+        legend.get_title().set_color(GEOMETRY_COLOR)
+        legend.get_title().set_fontfamily(HUD_FONT_FAMILY)
+    for text in legend.get_texts():
+        text.set_color(DARK_TEXT)
+        text.set_fontfamily(HUD_FONT_FAMILY)
+
+
 def write_geometry_plot(
     points: Sequence[tuple[float, float]], out_dir: Path, title: str
 ) -> None:
     if not points:
         return
     import matplotlib.pyplot as plt
+    import numpy as np
 
     xs, ys = zip(*points)
     fig, ax = plt.subplots(figsize=(11, 5.2), constrained_layout=True)
-    ax.plot(xs, ys, color=GEOMETRY_COLOR, linewidth=2.4)
-    ax.axhline(0, color="#94a3b8", linewidth=1, linestyle="--")
+    apply_dark_engineering_style(fig, ax)
+
+    # Split upper and lower surfaces at leading edge so upper is cyan, lower is emerald,
+    # and plot the dashed camberline y_c(x) = 0.5 * (y_u + y_l)
+    le_idx = min(range(len(points)), key=lambda i: points[i][0])
+    if 1 < le_idx < len(points) - 1:
+        upper = points[: le_idx + 1][::-1]
+        lower = points[le_idx:]
+        ux, uy = zip(*upper)
+        lx, ly = zip(*lower)
+        ax.fill(xs, ys, color="#1e293b", alpha=0.55)
+        ax.plot(ux, uy, color=GEOMETRY_COLOR, linewidth=2.5, label="UPPER SURFACE")
+        ax.plot(lx, ly, color=LOWER_GEOM_COLOR, linewidth=2.5, label="LOWER SURFACE")
+        xc_grid = np.linspace(0.0, 1.0, 101)
+        yu_i = np.interp(xc_grid, ux, uy)
+        yl_i = np.interp(xc_grid, lx, ly)
+        yc_i = 0.5 * (yu_i + yl_i)
+        tc_max = float(np.max(yu_i - yl_i) * 100.0)
+        cam_max = float(np.max( np.abs(yc_i)) * 100.0)
+        ax.plot(
+            xc_grid,
+            yc_i,
+            color=CAMBER_COLOR,
+            linewidth=1.3,
+            linestyle="--",
+            alpha=0.85,
+            label=f"CAMBERLINE (T/C={tc_max:.1f}%, CAM={cam_max:.1f}%)",
+        )
+        leg = ax.legend(loc="upper right", fontsize=8.5)
+        style_dark_legend(leg)
+    else:
+        ax.plot(xs, ys, color=GEOMETRY_COLOR, linewidth=2.4)
+
+    ax.axhline(0, color="#475569", linewidth=1.0, linestyle=":")
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(True, color="#e2e8f0", linewidth=0.8)
-    ax.set_title(f"{title} geometry")
-    ax.set_xlabel("x/c")
-    ax.set_ylabel("y/c")
-    fig.savefig(out_dir / "geometry.png", dpi=180)
+    ax.grid(True, color=DARK_GRID, linewidth=0.8)
+    ax.set_title(f"{title} — AIRFOIL GEOMETRY & CAMBERLINE", color=GEOMETRY_COLOR, fontweight="bold")
+    ax.set_xlabel("X: CHORD X/C")
+    ax.set_ylabel("Y/C")
+    fig.savefig(out_dir / "geometry.png", dpi=180, facecolor=DARK_BG)
     plt.close(fig)
 
 
@@ -162,8 +332,10 @@ def write_pressure_vector_plot(
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(12.5, 6.4), constrained_layout=False)
+    apply_dark_engineering_style(fig, ax)
     fig.subplots_adjust(left=0.07, right=0.98, top=0.86, bottom=0.20)
     geometry_x, geometry_y = zip(*rotated_geometry)
+    ax.fill(geometry_x, geometry_y, color="#1e293b", alpha=0.6)
     ax.plot(geometry_x, geometry_y, color=GEOMETRY_COLOR, linewidth=2.2)
     ax.quiver(
         xs,
@@ -173,7 +345,7 @@ def write_pressure_vector_plot(
         angles="xy",
         scale_units="xy",
         scale=1,
-        color="#111827",
+        color="#10b981",
         width=0.0022,
         headwidth=3.6,
         headlength=4.8,
@@ -183,11 +355,15 @@ def write_pressure_vector_plot(
     ax.set_xlim(*xlim)
     ax.set_ylim(*ylim)
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(True, color="#e2e8f0", linewidth=0.8)
+    ax.grid(True, color=DARK_GRID, linewidth=0.8)
     alpha_rows = [polar_row_for_alpha(polar_rows, alpha)]
-    ax.set_title(f"{title} pressure vectors ({final_alpha_label(alpha_rows)})")
-    ax.set_xlabel("x/c")
-    ax.set_ylabel("y/c")
+    ax.set_title(
+        f"{title} pressure vectors ({final_alpha_label(alpha_rows)})",
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
+    )
+    ax.set_xlabel("X: CHORD X/C")
+    ax.set_ylabel("Y/C")
     fig.text(
         0.5,
         0.055,
@@ -196,16 +372,17 @@ def write_pressure_vector_plot(
         ha="center",
         va="top",
         fontsize=10,
+        color=DARK_TEXT,
         bbox={
             "boxstyle": "round,pad=0.35",
-            "facecolor": "white",
-            "edgecolor": "#cbd5e1",
+            "facecolor": DARK_PANEL,
+            "edgecolor": "#334155",
         },
     )
     vector_dir = out_dir / "pressure_vectors"
     vector_dir.mkdir(parents=True, exist_ok=True)
     path = vector_dir / f"pressure_vectors_alpha_{alpha_file_label(alpha)}.png"
-    fig.savefig(path, dpi=180)
+    fig.savefig(path, dpi=180, facecolor=DARK_BG)
     plt.close(fig)
     return path
 
@@ -345,9 +522,9 @@ def annotate_cp_alpha_labels(
                 va="center",
                 bbox={
                     "boxstyle": "round,pad=0.18",
-                    "facecolor": "white",
+                    "facecolor": "#0f172a",
                     "edgecolor": label["color"],
-                    "alpha": 0.82,
+                    "alpha": 0.88,
                 },
                 arrowprops={
                     "arrowstyle": "-",
@@ -392,7 +569,13 @@ def write_cp_distribution_plot(
     import numpy as np
 
     fig, cp_ax = plt.subplots(figsize=(11.8, 7.2), constrained_layout=True)
-    fig.suptitle(f"{title}\nCp distribution and envelope", fontsize=13)
+    apply_dark_engineering_style(fig, cp_ax)
+    fig.suptitle(
+        f"{title}\nCp distribution and envelope",
+        fontsize=11.5,
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
+    )
     if cp_series:
         surface_series = cp_surface_plot_series(cp_series)
         envelope_x = np.linspace(0, 1, 250)
@@ -410,8 +593,8 @@ def write_cp_distribution_plot(
                 xs,
                 cps,
                 color=item["color"],
-                linewidth=1.4,
-                alpha=0.78,
+                linewidth=1.6,
+                alpha=0.85,
                 label=legend_label,
             )
             unique_x, indices = np.unique(xs, return_index=True)
@@ -432,8 +615,8 @@ def write_cp_distribution_plot(
                 envelope_x[valid],
                 np.nanmin(values[:, valid], axis=0),
                 np.nanmax(values[:, valid], axis=0),
-                color="#64748b",
-                alpha=0.18,
+                color="#38bdf8",
+                alpha=0.14,
                 label="Cp envelope",
             )
         labeled = surface_series
@@ -453,26 +636,31 @@ def write_cp_distribution_plot(
                 f"{len(cp_series)} alpha curves; {len(label_alphas)} labeled",
                 transform=cp_ax.transAxes,
                 fontsize=9,
+                color=DARK_TEXT,
                 bbox={
                     "boxstyle": "round,pad=0.3",
-                    "facecolor": "white",
-                    "edgecolor": "#cbd5e1",
+                    "facecolor": "#0f172a",
+                    "edgecolor": "#334155",
                 },
             )
         annotate_cp_alpha_labels(cp_ax, labeled)
-        cp_ax.legend(loc="upper right", fontsize=8)
+        leg = cp_ax.legend(loc="upper right", fontsize=8)
+        style_dark_legend(leg)
     else:
         cp_ax.text(
-            0.05, 0.5, "No converged Cp data available.", color="#b91c1c"
+            0.05, 0.5, "No converged Cp data available.", color="#f43f5e"
         )
-    cp_ax.axhline(0, color="#94a3b8", linewidth=1)
+    cp_ax.axhline(0, color="#475569", linewidth=1, linestyle="--")
     cp_ax.invert_yaxis()
-    cp_ax.grid(True, color="#e2e8f0", linewidth=0.8)
+    cp_ax.grid(True, color=DARK_GRID, linewidth=0.8)
     cp_ax.set(
-        xlabel="x/c", ylabel="Cp", title="Upper/lower surface Cp with envelope"
+        xlabel="X: CHORD X/C",
+        ylabel="CP",
+        title="Upper/lower surface Cp with envelope",
     )
+    cp_ax.title.set_color(GEOMETRY_COLOR)
     path = out_dir / "cp_distribution.png"
-    fig.savefig(path, dpi=180)
+    fig.savefig(path, dpi=180, facecolor=DARK_BG)
     plt.close(fig)
     return path
 
@@ -494,6 +682,7 @@ def write_polar_chart(
     from matplotlib.ticker import MaxNLocator
 
     fig, ax = plt.subplots(figsize=(8.6, 6.2), constrained_layout=True)
+    apply_dark_engineering_style(fig, ax)
     if (
         x_values
         and y_values
@@ -508,7 +697,7 @@ def write_polar_chart(
             color=color,
             marker="o",
             markersize=5.5,
-            linewidth=1.8,
+            linewidth=2.0,
         )
         if len(alpha_labels) <= 9:
             for x_value, y_value, alpha in zip(
@@ -522,7 +711,7 @@ def write_polar_chart(
                     textcoords="offset points",
                     xytext=(5, 5),
                     fontsize=8,
-                    color="#334155",
+                    color=DARK_TEXT,
                 )
     else:
         ax.text(
@@ -532,9 +721,9 @@ def write_polar_chart(
             transform=ax.transAxes,
             ha="center",
             va="center",
-            color="#b91c1c",
+            color="#f43f5e",
         )
-    ax.set_title(title)
+    ax.set_title(title, color=GEOMETRY_COLOR, fontweight="bold")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.xaxis.set_major_locator(MaxNLocator(nbins=6))
@@ -558,9 +747,9 @@ def write_polar_chart(
                 if not math.isfinite(y)
             ],
         )
-    ax.grid(True, color="#e2e8f0", linewidth=0.8)
+    ax.grid(True, color=DARK_GRID, linewidth=0.8)
     path = out_dir / filename
-    fig.savefig(path, dpi=180)
+    fig.savefig(path, dpi=180, facecolor=DARK_BG)
     plt.close(fig)
     return path
 
@@ -599,7 +788,7 @@ def write_polar_result_plots(
             f"{title} CL vs alpha",
             "alpha (deg)",
             "CL",
-            "#2563eb",
+            "#38bdf8",
         ),
         write_polar_chart(
             out_dir,
@@ -610,7 +799,7 @@ def write_polar_result_plots(
             f"{title} CD vs alpha",
             "alpha (deg)",
             "CD",
-            "#dc2626",
+            "#f43f5e",
             scientific_y=True,
         ),
         write_polar_chart(
@@ -622,7 +811,7 @@ def write_polar_result_plots(
             f"{title} CM vs alpha",
             "alpha (deg)",
             "CM",
-            "#7c3aed",
+            "#a855f7",
         ),
         write_polar_chart(
             out_dir,
@@ -633,7 +822,7 @@ def write_polar_result_plots(
             f"{title} CL vs CD",
             "CD",
             "CL",
-            "#0f766e",
+            "#10b981",
             scientific_x=True,
         ),
         write_polar_chart(
@@ -645,7 +834,7 @@ def write_polar_result_plots(
             f"{title} lift-to-drag ratio vs alpha",
             "alpha (deg)",
             "CL/CD",
-            "#b45309",
+            "#f59e0b",
         ),
     ]
 
@@ -690,3 +879,4 @@ def write_cp_polar_outputs(
             if vector_path is not None:
                 vectors.append(vector_path)
     return {"result_plots": result_plots, "pressure_vectors": vectors}
+

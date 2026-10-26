@@ -257,14 +257,39 @@ def run_lift(
     ]
     write_records(destination / "lift_results.csv", records)
     import matplotlib.pyplot as plt
+    from ..plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_TEXT,
+        apply_dark_engineering_style,
+    )
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4), layout="constrained")
+    fig, axes = plt.subplots(
+        1, 2, figsize=(10, 4), layout="constrained", facecolor=DARK_BG
+    )
+    apply_dark_engineering_style(fig, axes)
     valid = [r for r in records if r["status"] == "ok"]
-    for ax, key in zip(axes, ("alpha", "CD")):
-        ax.plot([r["target_cl"] for r in valid], [r[key] for r in valid], "o")
-        ax.set(xlabel="Specified CL", ylabel=key)
-        ax.grid(alpha=0.2)
-    fig.savefig(destination / "lift_results.png", dpi=150)
+    for ax, key, color in zip(
+        axes, ("alpha", "CD"), ("#38bdf8", "#10b981")
+    ):
+        ax.plot(
+            [r["target_cl"] for r in valid],
+            [r[key] for r in valid],
+            "o-",
+            color=color,
+            linewidth=1.8,
+            markersize=5,
+        )
+        ax.set_xlabel("Specified CL", color=DARK_MUTED)
+        ax.set_ylabel(key, color=DARK_MUTED)
+        ax.set_title(
+            f"{key} vs Specified CL", color="#38bdf8", fontweight="bold"
+        )
+        ax.grid(True, color=DARK_GRID, alpha=0.85)
+    fig.savefig(
+        destination / "lift_results.png", dpi=150, facecolor=DARK_BG
+    )
     plt.close(fig)
     detail_links = []
     from ..plotting import write_cp_distribution_plot

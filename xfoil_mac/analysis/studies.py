@@ -72,20 +72,43 @@ def panel_study(
         },
     )
     import matplotlib.pyplot as plt
+    from ..plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_SERIES_PALETTE,
+        DARK_TEXT,
+        apply_dark_engineering_style,
+        style_dark_legend,
+    )
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4), layout="constrained")
-    for n in panels:
+    fig, axes = plt.subplots(
+        1, 2, figsize=(11, 4), layout="constrained", facecolor=DARK_BG
+    )
+    apply_dark_engineering_style(fig, axes)
+    for idx, n in enumerate(panels):
+        color = DARK_SERIES_PALETTE[idx % len(DARK_SERIES_PALETTE)]
         for ax, key in zip(axes, ("CL", "CD")):
             ax.scatter(
                 [r["alpha"] for r in rows[n]],
                 [r[key] for r in rows[n]],
                 label=f"{n} panels",
-                s=18,
+                s=22,
+                color=color,
             )
-            ax.set(xlabel="alpha (deg)", ylabel=key)
-            ax.grid(alpha=0.2)
-    axes[0].legend()
-    fig.savefig(destination / "panel_sensitivity.png", dpi=150)
+            ax.set_xlabel("alpha (deg)", color=DARK_MUTED)
+            ax.set_ylabel(key, color=DARK_MUTED)
+            ax.set_title(
+                f"{key} vs alpha | Panel Sensitivity",
+                color="#38bdf8",
+                fontweight="bold",
+            )
+            ax.grid(True, color=DARK_GRID, alpha=0.85)
+    leg = axes[0].legend()
+    style_dark_legend(leg)
+    fig.savefig(
+        destination / "panel_sensitivity.png", dpi=150, facecolor=DARK_BG
+    )
     plt.close(fig)
     return report_page(
         destination / "report.html",

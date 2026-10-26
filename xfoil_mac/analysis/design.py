@@ -150,15 +150,28 @@ PRESCREEN_ALPHAS = tuple(float(v) for v in range(-4, 15))
 
 
 def load_surrogate(root: Path | None = None):
-    """The most recent trained surrogate, or None if there is none."""
+    """The most recent trained surrogate (preferring MLX ensemble), or None."""
     folder = (Path(root) if root else Path("xfoil_runs")) / "models"
+    mlx_latest = folder / "surrogate_mlx_latest.npz"
+    if mlx_latest.is_file():
+        try:
+            from . import mlx_surrogate
+
+            if mlx_surrogate.mlx_version() is not None:
+                loaded = mlx_surrogate.load(mlx_latest)
+                loaded["backend"] = "mlx"
+                return loaded
+        except Exception:  # noqa: BLE001
+            pass
     latest = folder / "surrogate_latest.joblib"
     if not latest.is_file():
         return None
     try:
         from . import surrogate
 
-        return surrogate.load(latest)
+        loaded = surrogate.load(latest)
+        loaded["backend"] = "sklearn"
+        return loaded
     except Exception:  # noqa: BLE001
         return None
 
@@ -166,18 +179,29 @@ def load_surrogate(root: Path | None = None):
 def prescreen_candidate(loaded, shape, conditions):
     """Predict every condition for one candidate without solving.
 
+    Supports both the 31-feature MLX neural ensemble surrogate (with epistemic
+    uncertainty `CL_std`, `CD_std`, `L_D_lcb`) and the scikit-learn surrogate.
     Returns one entry per condition. A condition whose lift cannot be
     reached inside the swept range, or whose inputs fall outside the
-    training data, is marked as such rather than given a number, because
-    a tree returns a value everywhere and cannot decline.
+    training data, is marked as such rather than given a number.
     """
-    from . import surrogate
+    use_mlx = (
+        isinstance(loaded, dict)
+        and (
+            loaded.get("backend") == "mlx"
+            or loaded.get("metadata", {}).get("kind") == "mlx_ensemble"
+        )
+    )
+    if use_mlx:
+        from . import mlx_surrogate as backend_mod
+    else:
+        from . import surrogate as backend_mod
 
     entries = []
     for condition in conditions:
         target = float(condition["cl"])
         try:
-            predicted = surrogate.predict(
+            predicted = backend_mod.predict(
                 loaded,
                 coordinates=Path(shape),
                 re=float(condition["re"]),
@@ -213,21 +237,23 @@ def prescreen_candidate(loaded, shape, conditions):
                 }
             )
             continue
-        entries.append(
-            {
-                "target_cl": target,
-                "usable": True,
-                "extrapolates": bool(best["extrapolates"]),
-                "note": "; ".join(best["outside"]),
-                "alpha": best["alpha"],
-                "CL": best["CL"],
-                "CD": best["CD"],
-                "CM": best["CM"],
-                "lift_to_drag": (
-                    best["CL"] / best["CD"] if best["CD"] > 0 else None
-                ),
-            }
-        )
+        entry = {
+            "target_cl": target,
+            "usable": True,
+            "extrapolates": bool(best["extrapolates"]),
+            "note": "; ".join(best["outside"]),
+            "alpha": best["alpha"],
+            "CL": best["CL"],
+            "CD": best["CD"],
+            "CM": best["CM"],
+            "lift_to_drag": (
+                best["CL"] / best["CD"] if best["CD"] > 0 else None
+            ),
+        }
+        for uq_key in ("CL_std", "CD_std", "CM_std", "L_D_lcb", "ood_distance"):
+            if uq_key in best:
+                entry[uq_key] = best[uq_key]
+        entries.append(entry)
     return entries
 
 
@@ -445,28 +471,52 @@ def design_search(app, config, destination, resume=False):
     atomic_json(file, saved)
     write_records(destination / "candidates.csv", saved["candidates"])
     import matplotlib.pyplot as plt
+    from ..plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_TEXT,
+        apply_dark_engineering_style,
+    )
 
-    fig, ax = plt.subplots(figsize=(8, 5), layout="constrained")
+    fig, ax = plt.subplots(
+        figsize=(8, 5), layout="constrained", facecolor=DARK_BG
+    )
+    apply_dark_engineering_style(fig, [ax])
     for r in saved["candidates"]:
         if "mean_CD" not in r:
             continue
         ax.scatter(
             r["mean_CD"],
             r["worst_LD"],
+            s=42,
             color=(
-                "#d47927"
+                "#f59e0b"
                 if r["pareto"]
-                else "#126782" if r["feasible"] else "#aaa"
+                else "#38bdf8" if r["feasible"] else "#64748b"
             ),
         )
-        ax.annotate(str(r["candidate"]), (r["mean_CD"], r["worst_LD"]))
-    ax.set(
-        xlabel="Mean CD across conditions (lower is better)",
-        ylabel="Worst CL/CD across conditions (higher is better)",
-        title="Orange: nondominated feasible candidates",
+        ax.annotate(
+            str(r["candidate"]),
+            (r["mean_CD"], r["worst_LD"]),
+            color=DARK_TEXT,
+            fontsize=8,
+            xytext=(4, 4),
+            textcoords="offset points",
+        )
+    ax.set_xlabel(
+        "Mean CD across conditions (lower is better)", color=DARK_MUTED
     )
-    ax.grid(alpha=0.2)
-    fig.savefig(destination / "pareto.png", dpi=150)
+    ax.set_ylabel(
+        "Worst CL/CD across conditions (higher is better)", color=DARK_MUTED
+    )
+    ax.set_title(
+        "Amber: nondominated feasible candidates | Cyan: feasible",
+        color="#38bdf8",
+        fontweight="bold",
+    )
+    ax.grid(True, color=DARK_GRID, alpha=0.85)
+    fig.savefig(destination / "pareto.png", dpi=150, facecolor=DARK_BG)
     plt.close(fig)
     report_page(
         destination / "report.html",

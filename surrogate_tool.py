@@ -1,4 +1,4 @@
-"""Train the surrogate and ask it for numbers.
+"""Train the surrogate, run inverse queries, and launch 6D Aero-Structural MDO.
 
 Commands:
 
@@ -7,14 +7,18 @@ Commands:
     python surrogate_tool.py target-cl --airfoil=naca2412 --re=5e5 --mach=0.1 \
         --cl=0.75
     python surrogate_tool.py optimize --coordinates=examples/af.dat \
-        --re=5e5 --mach=0.1 --alpha=4.0 --out=optimized.dat
+        --re=5e5 --mach=0.1 --alpha=4.0 --out=optimized.dat [--wingbox]
+    python surrogate_tool.py mdo [--bo-steps=20] [--flow-steps=18] \
+        [--mass-budget=0.026] [--dat-file=PATH] [--out-dir=PATH]
+    python surrogate_tool.py interactive   (or: python surrogate_tool.py -i)
 
 ``predict`` prints one row per angle and marks any row whose inputs fall
-outside the values the model was trained on. A tree returns a number
-everywhere, so without that mark an extrapolation is indistinguishable
-from an interpolation. When using the ``mlx`` backend, predictions also
-report ensemble uncertainty (``CD_std``) and support ``mx.grad`` inverse
-queries (``target-cl`` and ``optimize``).
+outside the values the model was trained on. When using the ``mlx`` backend,
+predictions also report ensemble uncertainty (``CD_std``) and support
+``mx.grad`` inverse queries (``target-cl`` and ``optimize``), plus 6D
+Asymmetric CST Bayesian Optimization, Physics-Guided Rectified Flow ODE, and
+Body-Fitted Isoparametric Wing-Box Structural Topology Optimization (``mdo``
+and ``interactive``).
 """
 
 from __future__ import annotations
@@ -59,6 +63,10 @@ def _resolve_backend(model_path: Path | None, backend_flag: str | None) -> str:
     if backend_flag in {"mlx", "sklearn"}:
         return backend_flag
     if model_path is not None and model_path.suffix == ".npz":
+        return "mlx"
+    mlx_latest = DEFAULT_ROOT / MODEL_DIR / LATEST_MLX
+    sk_latest = DEFAULT_ROOT / MODEL_DIR / LATEST
+    if mlx_latest.is_file() and not sk_latest.is_file():
         return "mlx"
     return "sklearn"
 
@@ -317,6 +325,7 @@ def command_optimize(argv: list) -> int:
         "alpha": "4.0",
         "model": None,
     }
+    run_wingbox = "--wingbox" in argv
     for flag in argv:
         if flag.startswith("--") and "=" in flag:
             name, _, value = flag[2:].partition("=")
@@ -348,14 +357,43 @@ def command_optimize(argv: list) -> int:
     print(f"基准翼型 L/D = {base['L_D']:.2f} (LCB={base['L_D_lcb']:.2f})")
     print(f"优化翼型 L/D = {opt['L_D']:.2f} (LCB={opt['L_D_lcb']:.2f})")
     print(f"已写出   {outcome['destination']}")
+    if run_wingbox:
+        from xfoil_mac.analysis.mdo.xfoil_bridge import (
+            optimize_arbitrary_dat_airfoil_wingbox,
+        )
+
+        wb = optimize_arbitrary_dat_airfoil_wingbox(
+            Path(options["out"]),
+            reynolds=float(options["re"]),
+        )
+        print(
+            f"仿生翼盒 三工况 p-范数柔度 = {wb['wingbox']['pnorm_compliance']:.4f} "
+            f"(质量预算 = {wb['wingbox']['mass']:.4f})"
+        )
+    return 0
+
+
+def command_mdo(argv: list) -> int:
+    from xfoil_mac.analysis.aero_structural_mdo import run_showcase
+
+    run_showcase(argv)
+    return 0
+
+
+def command_interactive() -> int:
+    from xfoil_mac.analysis.aero_structural_mdo import run_interactive_cli
+
+    run_interactive_cli()
     return 0
 
 
 def command_info(argv: list) -> int:
-    backend = "sklearn"
+    backend = _resolve_backend(None, None)
     for flag in argv:
         if flag == "--backend=mlx":
             backend = "mlx"
+        elif flag == "--backend=sklearn":
+            backend = "sklearn"
     model_path = _latest_model(backend)
     loaded = load_metadata(model_path)
     print(json.dumps(loaded, indent=2, ensure_ascii=False))
@@ -382,6 +420,10 @@ def main(argv: list) -> int:
         return command_target_cl(rest)
     if command == "optimize":
         return command_optimize(rest)
+    if command == "mdo":
+        return command_mdo(rest)
+    if command in {"interactive", "-i", "--interactive"}:
+        return command_interactive()
     if command == "info":
         return command_info(rest)
     raise SystemExit(f"Unknown command: {command}")

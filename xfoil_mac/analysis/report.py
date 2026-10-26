@@ -11,11 +11,11 @@ from urllib.parse import quote
 from ..data import atomic_text
 
 VERDICT_LABELS = {
-    "ok": ("可信", "#1d7a3d", "#e6f4ea"),
-    "suspect": ("超出有效域", "#8a5a00", "#fdf2dc"),
-    "invalid": ("求解失败", "#a02020", "#fbe9e9"),
-    "retry": ("孤立失败，可重试", "#4a4a8a", "#ececfb"),
-    "unchecked": ("无证据", "#6e6e73", "#f0f0f2"),
+    "ok": ("可信", "#10b981", "#064e3b"),
+    "suspect": ("超出有效域", "#f59e0b", "#451a03"),
+    "invalid": ("求解失败", "#f43f5e", "#4c0519"),
+    "retry": ("孤立失败，可重试", "#a855f7", "#3b0764"),
+    "unchecked": ("无证据", "#94a3b8", "#1e293b"),
 }
 """Verdict wording, and the colours it is shown in.
 
@@ -47,7 +47,7 @@ def trust_card(summary: dict) -> str:
         if not count:
             continue
         label, colour, background = VERDICT_LABELS.get(
-            name, (name, "#6e6e73", "#f0f0f2")
+            name, (name, "#94a3b8", "#1e293b")
         )
         chips.append(
             f'<span class="chip" style="color:{colour};'
@@ -133,58 +133,69 @@ def report_page(
         else ""
     )
     verdict_card = trust_card(trust) if trust else ""
+    ttf_path = Path(__file__).resolve().parent.parent / "assets" / "xfoil_hud_5x7.ttf"
+    font_face_css = ""
+    if ttf_path.exists():
+        import base64
+
+        b64 = base64.b64encode(ttf_path.read_bytes()).decode("ascii")
+        font_face_css = (
+            '@font-face{font-family:"XFOIL HUD 5x7";'
+            f'src:url("data:font/ttf;base64,{b64}") format("truetype");'
+            "font-weight:normal;font-style:normal;font-display:swap}\n"
+        )
     atomic_text(
         destination,
         '<!doctype html><html lang="zh-CN"><meta charset="utf-8">\n'
         '<meta name="viewport" '
         'content="width=device-width,initial-scale=1">'
         f"<title>{escape(title)}</title>\n"
-        """<style>
-:root{color-scheme:light;font:14px/1.65 -apple-system,BlinkMacSystemFont,
-"Segoe UI",sans-serif;background:#f5f5f7;color:#1d1d1f}
+        f"<style>\n{font_face_css}"
+        """:root{color-scheme:dark;font:13px/1.65 "XFOIL HUD 5x7","PingFang SC","Heiti TC",ui-monospace,
+"SFMono-Regular",Menlo,monospace;background:#04070e;color:#e2e8f0}
 *{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;
 padding:42px 28px 28px}.eyebrow{font-size:12px;font-weight:600;
-color:#6e6e73;letter-spacing:.035em;margin:0 0 12px}
-h1{font-size:34px;line-height:1.2;font-weight:650;letter-spacing:-.035em;
-margin:0 0 16px;overflow-wrap:anywhere}.description{color:#6e6e73;
+color:#38bdf8;letter-spacing:.035em;margin:0 0 12px}
+h1{font-size:28px;line-height:1.3;font-weight:600;letter-spacing:.02em;
+margin:0 0 16px;overflow-wrap:anywhere;color:#38bdf8}.description{color:#94a3b8;
 max-width:880px;margin:0;white-space:pre-line}
-a{color:#007aff;text-decoration:none}a:hover{text-decoration:underline}
+a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}
 nav{display:flex;flex-wrap:wrap;gap:9px;margin:26px 0}
 nav a{display:inline-flex;align-items:center;padding:8px 13px;
-border:1px solid #e5e5ea;border-radius:10px;background:#fff;font-size:13px;
-overflow-wrap:anywhere}nav a:hover{background:#fafafa;border-color:#d2d2d7}
+border:1px solid #2ea8ff;border-radius:6px;background:#090d16;color:#e2e8f0;font-size:12px;
+overflow-wrap:anywhere}nav a:hover{background:#162032;border-color:#38bdf8}
 a:focus-visible,summary:focus-visible,.scroll:focus-visible{
-outline:3px solid #007aff55;outline-offset:3px}
-.data-card{background:#fff;border:1px solid #e5e5ea;border-radius:18px;
-overflow:hidden;box-shadow:0 2px 8px #00000003}.scroll{overflow:auto}
-table{border-collapse:collapse;font-size:13px;width:100%;
-font-variant-numeric:tabular-nums}td,th{padding:13px 16px;text-align:left;
-border-bottom:1px solid #ededf0;vertical-align:top}th{white-space:nowrap;
-font-size:12px;font-weight:600;color:#6e6e73;background:#fafafa}
-tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#fafafa}
-td{max-width:600px;overflow-wrap:anywhere}details{min-width:120px}
-summary{cursor:pointer;color:#007aff;font-size:12px}
-pre{font:11px/1.6 ui-monospace,"SFMono-Regular",Menlo,monospace;
+outline:3px solid #38bdf855;outline-offset:3px}
+.data-card{background:#090d16;border:1px solid #2ea8ff;border-radius:8px;
+overflow:hidden;box-shadow:0 4px 16px #00000066}.scroll{overflow:auto}
+table{border-collapse:collapse;font-size:12px;width:100%;
+font-variant-numeric:tabular-nums}td,th{padding:12px 16px;text-align:left;
+border-bottom:1px solid #162032;vertical-align:top}th{white-space:nowrap;
+font-size:11px;font-weight:600;color:#38bdf8;background:#060a12}
+tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#16203288}
+td{max-width:600px;overflow-wrap:anywhere;color:#e2e8f0}details{min-width:120px}
+summary{cursor:pointer;color:#38bdf8;font-size:12px}
+pre{font:11px/1.6 "XFOIL HUD 5x7","PingFang SC",ui-monospace,"SFMono-Regular",Menlo,monospace;
 white-space:pre-wrap;overflow-wrap:anywhere;max-width:480px;
-padding:12px;background:#f5f5f7;border-radius:8px;margin:10px 0 0}
-figure{margin:24px 0;background:#fff;border:1px solid #e5e5ea;
-border-radius:18px;overflow:hidden}img{max-width:100%;display:block;
-margin:auto;background:#fff}figcaption{padding:12px 18px;
-color:#6e6e73;font-size:12px;border-top:1px solid #ededf0}
-footer{color:#86868b;font-size:12px;padding:28px 0 6px}
+padding:12px;background:#04070e;color:#e2e8f0;border:1px solid #162032;border-radius:6px;margin:10px 0 0}
+figure{margin:24px 0;background:#090d16;border:1px solid #2ea8ff;
+border-radius:8px;overflow:hidden}img{max-width:100%;display:block;
+margin:auto;background:#04070e}figcaption{padding:12px 18px;
+color:#94a3b8;font-size:12px;border-top:1px solid #162032}
+footer{color:#64748b;font-size:12px;padding:28px 0 6px}
 .verdict{margin:0 0 22px}.verdict-body{padding:18px 20px}
 .verdict-title{margin:0 0 8px;font-size:12px;font-weight:600;
-color:#6e6e73;letter-spacing:.035em}
-.verdict-line{margin:0 0 12px;font-size:13px}
+color:#38bdf8;letter-spacing:.035em}
+.verdict-line{margin:0 0 12px;font-size:13px;color:#e2e8f0}
 .verdict-chips{margin:0;display:flex;flex-wrap:wrap;gap:8px}
 .chip{display:inline-flex;align-items:center;padding:5px 11px;
-border-radius:999px;font-size:12px;font-weight:600;
+border-radius:4px;font-size:11px;font-weight:600;
 font-variant-numeric:tabular-nums}
 .verdict details{margin-top:12px}
-@media(max-width:640px){main{padding:28px 16px 20px}h1{font-size:27px}
+@media(max-width:640px){main{padding:28px 16px 20px}h1{font-size:22px}
 nav{margin:22px 0;gap:8px}nav a{padding:8px 11px}td,th{padding:11px 13px}
-.data-card,figure{border-radius:14px}}
-@media print{body{background:#fff}main{padding:0;max-width:none}
+.data-card,figure{border-radius:6px}}
+@media print{body{background:#04070e}main{padding:0;max-width:none}
 .data-card,figure{box-shadow:none;break-inside:avoid}
 .scroll{overflow:visible}nav a{border:0;padding:0;margin-right:12px}}
 </style>\n"""

@@ -134,6 +134,15 @@ def compare_experiment(
     ]:
         raise ValueError("Output must not overwrite the experimental input")
     destination.mkdir(parents=True, exist_ok=True)
+    from .plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_TEXT,
+        apply_dark_engineering_style,
+        style_dark_legend,
+    )
+
     plots = []
     for key in metrics:
         matched = [
@@ -142,38 +151,50 @@ def compare_experiment(
             if r["status"] == "matched" and f"error_{key}" in r
         ]
         fig, axes = plt.subplots(
-            2, 1, figsize=(9, 6), sharex=True, constrained_layout=True
+            2,
+            1,
+            figsize=(9, 6),
+            sharex=True,
+            constrained_layout=True,
+            facecolor=DARK_BG,
         )
+        apply_dark_engineering_style(fig, axes)
         x = [r["measured_alpha"] for r in matched]
         axes[0].scatter(
             x,
             [r[f"measured_{key}"] for r in matched],
             marker="o",
             facecolors="none",
-            edgecolors="#d97706",
+            edgecolors="#f59e0b",
+            linewidths=1.6,
             label="Reference measurements",
         )
         axes[0].scatter(
             x,
             [r[f"predicted_{key}"] for r in matched],
             marker="x",
-            color="#2563eb",
+            color="#38bdf8",
+            linewidths=1.8,
             label="XFOIL at matched conditions",
         )
-        axes[0].set(
-            ylabel=key,
-            title=f'{key} comparison | RMSE={metrics[key]["rmse"]:.5g}',
+        axes[0].set_ylabel(key, color=DARK_MUTED)
+        axes[0].set_title(
+            f'{key} comparison | RMSE={metrics[key]["rmse"]:.5g}',
+            color="#38bdf8",
+            fontweight="bold",
         )
-        axes[0].legend()
+        leg = axes[0].legend()
+        style_dark_legend(leg)
         axes[1].scatter(
-            x, [r[f"error_{key}"] for r in matched], color="#2563eb"
+            x, [r[f"error_{key}"] for r in matched], color="#10b981", s=28
         )
-        axes[1].axhline(0, color="#64748b")
-        axes[1].set(xlabel="alpha (deg)", ylabel="Prediction - reference")
+        axes[1].axhline(0, color=DARK_MUTED, linestyle="--", linewidth=1.0)
+        axes[1].set_xlabel("alpha (deg)", color=DARK_MUTED)
+        axes[1].set_ylabel("Prediction - reference", color=DARK_MUTED)
         for ax in axes:
-            ax.grid(alpha=0.2)
+            ax.grid(True, color=DARK_GRID, alpha=0.85)
         name = f"experiment_{key}.png"
-        fig.savefig(destination / name, dpi=160)
+        fig.savefig(destination / name, dpi=160, facecolor=DARK_BG)
         plt.close(fig)
         plots.append(name)
     write_records(destination / "experiment_matches.csv", records)

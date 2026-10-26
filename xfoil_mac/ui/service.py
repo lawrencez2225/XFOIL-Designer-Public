@@ -22,6 +22,7 @@ KINDS = {
     "design",
     "coupling",
     "compare",
+    "mdo",
 }
 
 
@@ -87,6 +88,14 @@ def preflight(spec):
         ) * len(design.get("conditions", [{}, {}]))
     elif kind == "wing":
         points = len(spec.get("model", {}).get("cases", []))
+    elif kind == "mdo":
+        mdo_cfg = spec.get("mdo") or {}
+        count = 3
+        points = (
+            int(mdo_cfg.get("bo_init", 12))
+            + int(mdo_cfg.get("bo_steps", 20))
+            + int(mdo_cfg.get("flow_particles", 12))
+        )
     if count > 200 or count * points > 10000 or count < 1:
         raise ValueError(
             "单个任务最多 200 个算例、10,000 个目标点，请缩小范围"
@@ -347,6 +356,64 @@ def execute_spec(app, spec, root, resume=False):
             [(p.name, p.name) for p in sorted(data.glob("*.png"))],
         )
         file = data / "report.html"
+    elif kind == "mdo":
+        from ..analysis.mdo.interactive_cli import (
+            MDOConfig,
+            execute_mdo_from_config,
+        )
+
+        mdo_dict = spec.get("mdo") or {}
+        cfg = MDOConfig(
+            preset_name=spec.get("title")
+            or mdo_dict.get("preset_name", "Web Workbench 6D MDO"),
+            mass_budget=float(mdo_dict.get("mass_budget", 0.025)),
+            nelx=int(mdo_dict.get("nelx", 36)),
+            nely=int(mdo_dict.get("nely", 16)),
+            cruise_alpha=float(mdo_dict.get("cruise_alpha", 3.0)),
+            cruise_g=float(mdo_dict.get("cruise_g", 1.0)),
+            pullup_alpha=float(mdo_dict.get("pullup_alpha", 9.0)),
+            pullup_g=float(mdo_dict.get("pullup_g", 2.5)),
+            gust_alpha=float(mdo_dict.get("gust_alpha", -4.0)),
+            gust_g=float(mdo_dict.get("gust_g", -1.2)),
+            bo_init=int(mdo_dict.get("bo_init", 12)),
+            bo_steps=int(mdo_dict.get("bo_steps", 20)),
+            bo_kappa=float(mdo_dict.get("bo_kappa", 2.2)),
+            bo_length_scale=float(mdo_dict.get("bo_length_scale", 1.35)),
+            flow_particles=int(mdo_dict.get("flow_particles", 12)),
+            flow_steps=int(mdo_dict.get("flow_steps", 16)),
+            flow_guidance=float(mdo_dict.get("flow_guidance", 0.65)),
+            adjoint_steps=int(mdo_dict.get("adjoint_steps", 28)),
+            adjoint_lr=float(mdo_dict.get("adjoint_lr", 0.06)),
+            seed=int(mdo_dict.get("seed", 42)),
+            xfoil_reynolds=float(mdo_dict.get("xfoil_reynolds", 1.0e6)),
+            xfoil_target_cl=float(mdo_dict.get("xfoil_target_cl", 0.75)),
+            wing_span_m=float(mdo_dict.get("wing_span_m", 10.0)),
+            wing_sweep_deg=float(mdo_dict.get("wing_sweep_deg", 12.0)),
+            output_dir=str(data),
+        )
+        execute_mdo_from_config(cfg)
+        report_page(
+            root / "report.html",
+            spec.get("title") or "6D 气动-结构耦合 MDO 与仿生翼盒拓扑优化",
+            "包含局部伴随梯度、6D GP-BO 贝叶斯优化、物理伴随流扩散模型三范式对比，以及三工况飞行包线鲁棒性与 3D 有限翼展耦合结果。",
+            [],
+            [("打开完整交互式 MDO 报告", "data/report.html")],
+            [
+                (
+                    "三范式气动-结构耦合优化对比",
+                    "data/three_paradigms_comparison.png",
+                ),
+                (
+                    "三工况飞行包线鲁棒性矩阵",
+                    "data/multipoint_envelope_matrix.png",
+                ),
+                (
+                    "XFOIL 6.996 + MLX 代理 + 3D 机翼耦合",
+                    "data/xfoil_3d_wing_integration.png",
+                ),
+            ],
+        )
+        return "ok"
     report_page(
         root / "report.html",
         spec.get("title") or kind,

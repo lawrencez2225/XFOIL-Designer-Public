@@ -10,15 +10,31 @@ def write_lifting_surface_outline(config: dict, destination: Path) -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-    fig = plt.figure(figsize=(12, 8), layout="constrained")
+    from .plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_PANEL,
+        DARK_SERIES_PALETTE,
+        DARK_TEXT,
+        GEOMETRY_COLOR,
+        HUD_FONT_FAMILY,
+        apply_dark_engineering_style,
+        style_dark_legend,
+    )
+
+    fig = plt.figure(figsize=(12, 8), layout="constrained", facecolor=DARK_BG)
     grid = fig.add_gridspec(2, 2, height_ratios=[1, 1.5])
     top = fig.add_subplot(grid[0, :])
     space = fig.add_subplot(grid[1, 0], projection="3d")
     details = fig.add_subplot(grid[1, 1])
+    apply_dark_engineering_style(fig, [top])
+    space.set_facecolor(DARK_PANEL)
+    details.set_facecolor(DARK_PANEL)
     details.axis("off")
     vertices, description = [], []
     for i, surface in enumerate(config["surfaces"]):
-        color = plt.get_cmap("tab10")(i % 10)
+        color = DARK_SERIES_PALETTE[i % len(DARK_SERIES_PALETTE)]
         sections = surface["sections"]
         description.append(f"{surface['name']} | mirror: {surface['mirror']}")
         for j, s in enumerate(sections, 1):
@@ -39,16 +55,16 @@ def write_lifting_surface_outline(config: dict, destination: Path) -> None:
             ]
             space.add_collection3d(
                 Poly3DCollection(
-                    quads, facecolors=color, edgecolors=color, alpha=0.3
+                    quads, facecolors=color, edgecolors=color, alpha=0.35
                 )
             )
             for q in quads:
                 q = np.array(q)
-                top.fill(q[:, 1], q[:, 0], color=color, alpha=0.18)
+                top.fill(q[:, 1], q[:, 0], color=color, alpha=0.22)
             for edge in (le, te):
-                top.plot(edge[:, 1], edge[:, 0], color=color)
+                top.plot(edge[:, 1], edge[:, 0], color=color, linewidth=1.6)
             for a, b in zip(le, te):
-                top.plot([a[1], b[1]], [a[0], b[0]], color=color, alpha=0.6)
+                top.plot([a[1], b[1]], [a[0], b[0]], color=color, alpha=0.75)
 
     points = np.array(vertices)
     lower, upper = points.min(axis=0), points.max(axis=0)
@@ -73,19 +89,32 @@ def write_lifting_surface_outline(config: dict, destination: Path) -> None:
         zlabel="z",
         title="Lifting-surface outline | equal scale",
     )
+    space.title.set_color(GEOMETRY_COLOR)
+    space.xaxis.label.set_color(DARK_MUTED)
+    space.yaxis.label.set_color(DARK_MUTED)
+    space.zaxis.label.set_color(DARK_MUTED)
+    space.tick_params(colors=DARK_MUTED)
+    for axis in (space.xaxis, space.yaxis, space.zaxis):
+        axis.pane.set_facecolor((17 / 255, 24 / 255, 39 / 255, 0.85))
+        axis.pane.set_edgecolor(DARK_GRID)
     top.set_aspect("equal", adjustable="box")
     top.invert_yaxis()
-    top.set(
-        xlabel="Spanwise y (model length units)",
-        ylabel="Downstream x",
-        title=(
-            f"Top view | equal scale | y extent={extent[1]:g}, x "
-            f"extent={extent[0]:g}"
-        ),
+    top.set_xlabel("Spanwise y (model length units)", color=DARK_MUTED)
+    top.set_ylabel("Downstream x", color=DARK_MUTED)
+    top.set_title(
+        f"Top view | equal scale | y extent={extent[1]:g}, x "
+        f"extent={extent[0]:g}",
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
     )
-    top.grid(alpha=0.2)
+    top.grid(True, color=DARK_GRID, alpha=0.85)
     reference = config["reference"]
-    details.set_title("Section inputs used by AVL", loc="left")
+    details.set_title(
+        "Section inputs used by AVL",
+        loc="left",
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
+    )
     text = (
         f"Sref={reference['area']:g}  Cref={reference['chord']:g}  "
         f"Bref={reference['span']:g}\n\n"
@@ -95,7 +124,15 @@ def write_lifting_surface_outline(config: dict, destination: Path) -> None:
         text = (
             "\n".join(lines[:13]) + "\n... full section list in wing_run.json"
         )
-    details.text(0, 0.98, text, va="top", fontsize=10, family="monospace")
+    details.text(
+        0,
+        0.98,
+        text,
+        va="top",
+        fontsize=9.5,
+        family=HUD_FONT_FAMILY,
+        color=DARK_TEXT,
+    )
     details.text(
         0,
         -0.03,
@@ -103,12 +140,16 @@ def write_lifting_surface_outline(config: dict, destination: Path) -> None:
         "It does not rotate the section coordinates.\n"
         "This is a lifting-surface preview, without airfoil thickness.",
         va="bottom",
-        fontsize=9,
-        color="#52616b",
+        fontsize=8.5,
+        family=HUD_FONT_FAMILY,
+        color=DARK_MUTED,
         linespacing=1.5,
     )
-    fig.suptitle(config["name"], fontsize=15)
-    fig.savefig(destination / "wing_planform.png", dpi=160)
+    fig.suptitle(config["name"], fontsize=13, color=GEOMETRY_COLOR, fontweight="bold")
+    apply_dark_engineering_style(fig, [top])
+    fig.savefig(
+        destination / "wing_planform.png", dpi=160, facecolor=DARK_BG
+    )
     plt.close(fig)
 
 
@@ -118,15 +159,30 @@ def write_wing_geometry(config: dict, destination: Path) -> None:
     from matplotlib.ticker import MaxNLocator, FormatStrFormatter
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
     from .wing_geometry import surface_lofts, loft_triangles, section_profile
+    from .plotting import (
+        DARK_BG,
+        DARK_GRID,
+        DARK_MUTED,
+        DARK_PANEL,
+        DARK_SERIES_PALETTE,
+        DARK_TEXT,
+        GEOMETRY_COLOR,
+        HUD_FONT_FAMILY,
+        apply_dark_engineering_style,
+        style_dark_legend,
+    )
 
     write_lifting_surface_outline(config, destination)
-    fig = plt.figure(figsize=(13, 8), layout="constrained")
+    fig = plt.figure(figsize=(13, 8), layout="constrained", facecolor=DARK_BG)
     grid = fig.add_gridspec(
         2, 2, width_ratios=[1.25, 1], height_ratios=[1.15, 1]
     )
     whole = fig.add_subplot(grid[:, 0], projection="3d")
     closeup = fig.add_subplot(grid[0, 1], projection="3d")
     profiles = fig.add_subplot(grid[1, 1])
+    apply_dark_engineering_style(fig, [profiles])
+    whole.set_facecolor(DARK_PANEL)
+    closeup.set_facecolor(DARK_PANEL)
     all_points = []
     first_lofts = None
 
@@ -139,6 +195,7 @@ def write_wing_geometry(config: dict, destination: Path) -> None:
                 linewidths=0,
                 antialiased=False,
                 shade=True,
+                alpha=0.85,
             )
         )
         for ring in (loft[0], loft[-1]):
@@ -147,11 +204,11 @@ def write_wing_geometry(config: dict, destination: Path) -> None:
                 Poly3DCollection(
                     [ring],
                     facecolors=color,
-                    edgecolors="#16354b",
+                    edgecolors=DARK_TEXT,
                     linewidths=0.7,
                 )
             )
-            ax.plot(*closed.T, color="#16354b", linewidth=0.8)
+            ax.plot(*closed.T, color=DARK_TEXT, linewidth=0.9)
 
     def fit_equal(ax, points, elev, azim, zoom=1):
         low, high = points.min(axis=0), points.max(axis=0)
@@ -172,12 +229,20 @@ def write_wing_geometry(config: dict, destination: Path) -> None:
         for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
             axis.set_major_locator(MaxNLocator(3))
             axis.set_major_formatter(FormatStrFormatter("%g"))
+            axis.pane.set_facecolor((17 / 255, 24 / 255, 39 / 255, 0.85))
+            axis.pane.set_edgecolor(DARK_GRID)
         ax.set(xlabel="x", ylabel="y", zlabel="z")
-        ax.tick_params(labelsize=8, pad=1)
+        ax.xaxis.label.set_color(DARK_MUTED)
+        ax.yaxis.label.set_color(DARK_MUTED)
+        ax.zaxis.label.set_color(DARK_MUTED)
+        ax.xaxis.label.set_fontfamily(HUD_FONT_FAMILY)
+        ax.yaxis.label.set_fontfamily(HUD_FONT_FAMILY)
+        ax.zaxis.label.set_fontfamily(HUD_FONT_FAMILY)
+        ax.tick_params(labelsize=8, pad=1, colors=DARK_MUTED)
         ax.grid(False)
 
     for i, surface in enumerate(config["surfaces"]):
-        color = plt.get_cmap("tab10")(i % 10)
+        color = DARK_SERIES_PALETTE[i % len(DARK_SERIES_PALETTE)]
         lofts = surface_lofts(surface)
         if first_lofts is None:
             first_lofts = lofts
@@ -187,18 +252,27 @@ def write_wing_geometry(config: dict, destination: Path) -> None:
     fit_equal(whole, np.concatenate(all_points), elev=19, azim=-58, zoom=1.15)
     whole.set_axis_off()
     whole.set_title(
-        "3D section loft | true proportions and thickness", fontsize=13
+        "3D section loft | true proportions and thickness",
+        fontsize=11,
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
     )
 
     # Show the near tip at a larger scale so a slender wing's section remains
     # visible.
     tip = first_lofts[-1][-5:]
     draw_skin(
-        closeup, tip, plt.get_cmap("tab10")(0), reflected=len(first_lofts) == 2
+        closeup,
+        tip,
+        DARK_SERIES_PALETTE[0],
+        reflected=len(first_lofts) == 2,
     )
     fit_equal(closeup, tip.reshape(-1, 3), elev=18, azim=-72)
     closeup.set_title(
-        "Wing-tip close-up | same thickness, enlarged view", fontsize=11
+        "Wing-tip close-up | enlarged view",
+        fontsize=9.5,
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
     )
     for index, section in enumerate(config["surfaces"][0]["sections"][:6]):
         xy = section_profile(section) * section["chord"]
@@ -215,24 +289,40 @@ def write_wing_geometry(config: dict, destination: Path) -> None:
             )
             + f", c={section['chord']:g}, i={section['twist']:+g} deg"
         )
-        profiles.plot(*rotated.T, label=label, linewidth=1.5)
+        profiles.plot(
+            *rotated.T,
+            label=label,
+            linewidth=1.7,
+            color=DARK_SERIES_PALETTE[index % len(DARK_SERIES_PALETTE)],
+        )
     profiles.set_aspect("equal", adjustable="box")
-    profiles.set(
-        xlabel="Distance from leading edge (model units)",
-        ylabel="Local thickness direction",
-        title="Section contours | leading edges aligned",
-        ymargin=0.25,
+    profiles.set_xlabel("X: CHORD DISTANCE (MODEL UNITS)", color=DARK_MUTED)
+    profiles.set_ylabel("Z/C THICKNESS", color=DARK_MUTED)
+    profiles.set_title(
+        "Section contours | leading edges aligned",
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
     )
-    profiles.grid(alpha=0.2)
-    profiles.legend(
+    profiles.margins(y=0.25)
+    profiles.grid(True, color=DARK_GRID, alpha=0.85)
+    leg = profiles.legend(
         loc="upper center", bbox_to_anchor=(0.5, -0.65), fontsize=8
     )
-    fig.suptitle(config["name"] + " | airfoil-shape preview", fontsize=16)
+    style_dark_legend(leg)
+    fig.suptitle(
+        config["name"] + " | airfoil-shape preview",
+        fontsize=13,
+        color=GEOMETRY_COLOR,
+        fontweight="bold",
+    )
     fig.supxlabel(
         "Appearance illustration: sections rotate about their leading "
         "edges. AVL still solves its thin lifting-surface model.",
-        fontsize=9,
-        color="#52616b",
+        fontsize=8.5,
+        color=DARK_MUTED,
     )
-    fig.savefig(destination / "wing_geometry.png", dpi=170)
+    apply_dark_engineering_style(fig, [profiles])
+    fig.savefig(
+        destination / "wing_geometry.png", dpi=170, facecolor=DARK_BG
+    )
     plt.close(fig)

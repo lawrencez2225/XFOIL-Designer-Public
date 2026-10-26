@@ -128,40 +128,60 @@ def write_boundary_reports(root: Path, polar_rows):
                 (folder / f"{stem}{suffix}").unlink(missing_ok=True)
             continue
         write_records(folder / f"{stem}.csv", records)
-        fig, axes = plt.subplots(2, 2, figsize=(10, 6), layout="constrained")
+        from ..plotting import (
+            DARK_BG,
+            DARK_GRID,
+            DARK_MUTED,
+            DARK_TEXT,
+            apply_dark_engineering_style,
+            style_dark_legend,
+        )
+
+        fig, axes = plt.subplots(
+            2, 2, figsize=(10, 6), layout="constrained", facecolor=DARK_BG
+        )
+        apply_dark_engineering_style(fig, axes.flat)
         for ax, key in zip(axes.flat, ("Cf", "Dstar", "Theta", "H")):
-            for side, color in (("upper", "#007f96"), ("lower", "#c66b24")):
+            for side, color in (("upper", "#38bdf8"), ("lower", "#10b981")):
                 surface = [r for r in records if r["surface"] == side]
                 ax.plot(
                     [r["x"] for r in surface],
                     [r[key] for r in surface],
                     label=side,
                     color=color,
+                    linewidth=1.8,
                 )
                 transition = point.get(
                     "Top_Xtr" if side == "upper" else "Bot_Xtr"
                 )
                 if transition is not None:
                     ax.axvline(
-                        transition, linestyle=":", color=color, alpha=0.6
+                        transition, linestyle=":", color=color, alpha=0.8
                     )
             units = (
-                "input coordinate length units"
+                "CHORD UNITS"
                 if key in ("Dstar", "Theta")
-                else "dimensionless"
+                else "DIMLESS"
             )
-            ax.set(
-                xlabel="x (input coordinate length units)",
-                ylabel=f"{key} ({units})",
+            ax.set_xlabel(
+                "X: CHORD X/C", color=DARK_MUTED
             )
-            ax.grid(alpha=0.2)
+            ax.set_ylabel(f"{key} ({units})", color=DARK_MUTED)
+            ax.grid(True, color=DARK_GRID, alpha=0.85)
             if key == "Cf":
-                ax.axhline(0, color="gray", linewidth=0.6)
-                ax.legend()
+                ax.axhline(
+                    0, color=DARK_MUTED, linestyle="--", linewidth=0.8
+                )
+                leg = ax.legend()
+                style_dark_legend(leg)
         fig.suptitle(
-            f"Boundary layer | alpha={alpha:g} deg | dotted lines: transition"
+            f"Boundary layer | alpha={alpha:g} deg | dotted lines: transition",
+            color="#38bdf8",
+            fontsize=11,
+            fontweight="bold",
         )
-        fig.savefig(folder / f"{stem}.png", dpi=140)
+        apply_dark_engineering_style(fig, axes.flat)
+        fig.savefig(folder / f"{stem}.png", dpi=140, facecolor=DARK_BG)
         plt.close(fig)
         index.append(
             {

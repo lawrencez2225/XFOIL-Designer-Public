@@ -74,12 +74,23 @@ def write_maps(folders: list[Path], destination: Path) -> Path:
                             if metric == "LD" and row["CD"] > 0
                             else row[metric] if metric != "LD" else np.nan
                         )
+            from .plotting import (
+                DARK_BG,
+                DARK_GRID,
+                DARK_MUTED,
+                DARK_PANEL,
+                DARK_TEXT,
+                apply_dark_engineering_style,
+            )
+
             fig, ax = plt.subplots(
                 figsize=(max(8, min(15, len(alphas) * 0.3)), 5),
                 constrained_layout=True,
+                facecolor=DARK_BG,
             )
+            apply_dark_engineering_style(fig, [ax])
             cmap = plt.get_cmap("viridis").copy()
-            cmap.set_bad("#e5e7eb")
+            cmap.set_bad(DARK_GRID)
             picture = ax.imshow(
                 np.ma.masked_invalid(grid),
                 origin="lower",
@@ -95,27 +106,31 @@ def write_maps(folders: list[Path], destination: Path) -> Path:
                     if (re_value, alpha) in cells and cells[
                         (re_value, alpha)
                     ] is None:
-                        ax.plot(ix, iy, "x", color="#c2410c", markersize=5)
+                        ax.plot(ix, iy, "x", color="#f43f5e", markersize=6, markeredgewidth=1.6)
             kind = cases[0].config.get("flow_type", 1)
-            ax.set(
-                xlabel="alpha (deg; sampled positions)",
-                ylabel=(
-                    "Re at reference CL"
-                    if kind != 1
-                    else "Re (sampled conditions)"
-                ),
-                title=(
-                    f"{cases[0].airfoil} | {metric} | M reference={mach:g} | "
-                    f"TYPE {kind}\nGray: no value; x: requested but missing; "
-                    f"no interpolation"
-                ),
+            ax.set_xlabel("alpha (deg; sampled positions)", color=DARK_MUTED)
+            ax.set_ylabel(
+                "Re at reference CL"
+                if kind != 1
+                else "Re (sampled conditions)",
+                color=DARK_MUTED,
             )
-            fig.colorbar(picture, ax=ax, label=metric)
+            ax.set_title(
+                f"{cases[0].airfoil} | {metric} | M reference={mach:g} | "
+                f"TYPE {kind}\nSlate: no value; x: requested but missing; "
+                f"no interpolation",
+                color="#38bdf8",
+                fontweight="bold",
+            )
+            cbar = fig.colorbar(picture, ax=ax, label=metric)
+            cbar.ax.yaxis.label.set_color(DARK_MUTED)
+            cbar.ax.tick_params(colors=DARK_MUTED)
+            cbar.outline.set_edgecolor(DARK_GRID)
             name = (
                 f"map_{group_number:03d}_"
                 f"{safe_label(cases[0].airfoil)}_{metric}.png"
             )
-            fig.savefig(destination / name, dpi=160)
+            fig.savefig(destination / name, dpi=160, facecolor=DARK_BG)
             plt.close(fig)
             plots.append(name)
     write_records(destination / "performance_map.csv", records)

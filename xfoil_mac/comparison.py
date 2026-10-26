@@ -162,6 +162,16 @@ def write_comparison(
         for page_start in range(0, len(cases), 12):
             page = page_start // 12 + 1
             selected = cases[page_start : page_start + 12]
+            from .plotting import (
+                DARK_BG,
+                DARK_GRID,
+                DARK_MUTED,
+                DARK_SERIES_PALETTE,
+                DARK_TEXT,
+                apply_dark_engineering_style,
+                style_dark_legend,
+            )
+
             for name, xkey, ykey, xlabel, ylabel in (
                 ("cl_vs_alpha", "alpha", "CL", "alpha (deg)", "CL"),
                 ("cd_vs_alpha", "alpha", "CD", "alpha (deg)", "CD"),
@@ -175,9 +185,12 @@ def write_comparison(
                 ),
             ):
                 fig, ax = plt.subplots(
-                    figsize=(11.5, 7), constrained_layout=True
+                    figsize=(11.5, 7),
+                    constrained_layout=True,
+                    facecolor=DARK_BG,
                 )
-                for record, rows in selected:
+                apply_dark_engineering_style(fig, [ax])
+                for idx, (record, rows) in enumerate(selected):
                     xs = [r[xkey] for r in rows]
                     ys = (
                         [
@@ -191,7 +204,17 @@ def write_comparison(
                         f"{record['airfoil']} "
                         f"({record['points']}/{record['requested_points']})"
                     )
-                    ax.plot(xs, ys, marker=".", linewidth=1.3, label=label)
+                    ax.plot(
+                        xs,
+                        ys,
+                        marker="o",
+                        markersize=4,
+                        linewidth=1.7,
+                        color=DARK_SERIES_PALETTE[
+                            idx % len(DARK_SERIES_PALETTE)
+                        ],
+                        label=label,
+                    )
                 condition = f"Re={reynolds:g}, Mach={mach:g}" + (
                     f" at CL={reference_cl:g}, TYPE {flow_type}"
                     if flow_type != 1
@@ -201,20 +224,23 @@ def write_comparison(
                     f" | Ncrit={json.loads(settings_key)['ncrit']:g}, "
                     f"panels={json.loads(settings_key)['panels']}"
                 )
-                ax.set(
-                    xlabel=xlabel,
-                    ylabel=ylabel,
-                    title=(
-                        f"{condition} | page {page} | legend: "
-                        f"converged/requested"
-                    ),
+                ax.set_xlabel(xlabel, color=DARK_MUTED)
+                ax.set_ylabel(ylabel, color=DARK_MUTED)
+                ax.set_title(
+                    f"{condition} | page {page} | legend: "
+                    f"converged/requested",
+                    color="#38bdf8",
+                    fontweight="bold",
                 )
-                ax.grid(True, alpha=0.25)
-                ax.legend(fontsize=8, loc="best")
+                ax.grid(True, color=DARK_GRID, alpha=0.85)
+                leg = ax.legend(fontsize=8, loc="best")
+                style_dark_legend(leg)
                 filename = (
                     f"condition_{group_number:03d}_page_{page:03d}_{name}.png"
                 )
-                fig.savefig(out_dir / filename, dpi=160)
+                fig.savefig(
+                    out_dir / filename, dpi=160, facecolor=DARK_BG
+                )
                 generated.append(filename)
                 plt.close(fig)
     previous_manifest = out_dir / "comparison_manifest.json"

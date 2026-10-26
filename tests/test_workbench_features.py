@@ -171,6 +171,35 @@ class WorkbenchFeatureTest(unittest.TestCase):
                 set(z.namelist()), {"report.html", "raw.txt", "SHARING.txt"}
             )
 
+    def test_workbench_mdo_preflight_and_hud_html(self):
+        from xfoil_mac.ui.service import preflight
+
+        html_path = (
+            Path(__file__).resolve().parent.parent
+            / "xfoil_mac/ui/assets/workbench.html"
+        )
+        html = html_path.read_text(encoding="utf-8")
+        self.assertIn("XFOIL HUD 5x7", html)
+        self.assertIn("hudAirfoilCanvas", html)
+        self.assertIn("modeMatrix", html)
+        self.assertIn("mdoMassBudget", html)
+        self.assertIn("wingPreview", html)
+
+        pf = preflight(
+            {
+                "kind": "mdo",
+                "title": "6D MDO Test",
+                "mdo": {
+                    "mass_budget": 0.025,
+                    "bo_init": 6,
+                    "bo_steps": 8,
+                    "flow_particles": 6,
+                },
+            }
+        )
+        self.assertEqual(pf["cases"], 3)
+        self.assertEqual(pf["requested_points"], 3 * (6 + 8 + 6))
+
 
 @unittest.skipUnless(
     os.environ.get("XFOIL_NATIVE_TESTS") == "1",
